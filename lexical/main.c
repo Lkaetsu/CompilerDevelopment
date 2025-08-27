@@ -2,8 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define satribuicao 11
-#define sdoispontos 37
+enum simbolosReservados = {sprograma, sinicio, sfim, sprocedimento, sfuncao, sse, sentao, ssenao, senquanto, sfaca, satribuicao, sescreva, sleia, svar, sinteiro, sbooleano, sidentificador, snumero, sponto, sponto_virgula, svirgula, sabre_parenteses, sfecha_parenteses, smaior, smaiorig, sig, smenor, smenorig, sdif, smais, smenos, smult, sdiv, se, sou, snao, sdoispontos, sverdadeiro, sfalso};
 
 typedef struct token {
     char lexema[];
@@ -102,3 +101,4 @@ int main(int argc, char *argv[])
 
     return 0;
 }
+
