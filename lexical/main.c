@@ -1,68 +1,190 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
-enum simbolosReservados = {sprograma, sinicio, sfim, sprocedimento, sfuncao, sse, sentao, ssenao, senquanto, sfaca, satribuicao, sescreva, sleia, svar, sinteiro, sbooleano, sidentificador, snumero, sponto, sponto_virgula, svirgula, sabre_parenteses, sfecha_parenteses, smaior, smaiorig, sig, smenor, smenorig, sdif, smais, smenos, smult, sdiv, se, sou, snao, sdoispontos, sverdadeiro, sfalso};
+enum simbolosReservados {sprograma, sinicio, sfim, sprocedimento, sfuncao,
+                         sse, sentao, ssenao, senquanto, sfaca, satribuicao,
+                         sescreva, sleia, svar, sinteiro, sbooleano,
+                         sidentificador, snumero, sponto, sponto_virgula,
+                         svirgula, sabre_parenteses, sfecha_parenteses,
+                         smaior, smaiorig, sig, smenor, smenorig, sdif,
+                         smais, smenos, smult, sdiv, se, sou, snao,
+                         sdoispontos, sverdadeiro, sfalso};
 
 typedef struct token {
-    char lexema[];
-    char simbolo[];
+    char *lexema;
+    int simbolo;
     struct token *next;
 }token;
 
-token *tk;
-tk = malloc(sizeof(token));
+token *tokenList;
 
-void storeToken(char t[], int s){
-    strcpy(tk->lexema, t);
-    tk->simbolo = s;
-    tk->NEXT = malloc(sizeof(token));
-    tk = tk->NEXT;
-    tk->next = NULL;
+void storeToken(token tk, token *ptr){
+    ptr = malloc(sizeof(token));
+    strcpy(ptr->lexema, tk.lexema);
+    ptr->simbolo = tk.simbolo;
+    ptr->next = NULL;
 }
 
 int isWhitespace(int c){
     // 8, 9, 10, 32 are whitespace
-    if (c == 8 || c == 9 || c == 10 || c == 32){
+    if (c == (int)'\b' || c == (int)'\t' || c == (int)'\n' || c == (int)' '){
         return 1;
     }
 
     return 0;
 }
 
-void handleDigit(int c){
-
+token handleDigit(int *c, FILE *file){
+    token tk;
+    return tk;
 }
 
-void handleIdOrReserved(int c){
-
+token handleIdOrReserved(int *c, FILE *file){
+    token tk;
+    return tk;
 }
 
-int handleAttr(file *file){
-    int c;
-    c = fgetc(file);
+token handleAttr(int *c, FILE *file){
+    token tk;
+    *c = fgetc(file);
     if (*c == (int)'=') {
-        tk->lexema = ":=";
-        tk->simbolo = satribuicao;
-        fgetc(file);
+        tk.lexema = ":=";
+        tk.simbolo = satribuicao;
+        *c = fgetc(file);
     } else {
-        tk->lexema = ":";
-        tk->simbolo = sdoispontos;
+        tk.lexema = ":";
+        tk.simbolo = sdoispontos;
     }
 
-    return c;
+    return tk;
 }
 
-void handleOpAri(int c){
+token handleOpAri(int *c, FILE *file){
+    token tk;
 
+    if (c == (int)'+'){
+        tk.lexema = "+";
+        tk.simbolo = smais;
+    }
+    else if (c == (int)'-')
+    {
+        tk.lexema = "-";
+        tk.simbolo = smenos;
+    }
+    else
+    {
+        tk.lexema = "*";
+        tk.simbolo = smult;
+    }
+    *c = fgetc(file);
+
+    return tk;
 }
 
-void handleOpRel(int c){
+token handleOpRel(int *c, FILE *file){
+    token tk;
 
+    if (c == (int)'!'){
+        *c = fgetc(file);
+
+        if (c == (int)'=')
+        {
+            tk.lexema = "!=";
+            tk.simbolo = sdif;
+            *c = fgetc(file);
+        }
+        else
+        {
+            printf("error");
+        }
+    }
+    else if (c == (int)'<')
+    {
+        *c = fgetc(file);
+
+        if (c == (int)'=')
+        {
+            tk.lexema = "<=";
+            tk.simbolo = smenorig;
+            *c = fgetc(file);
+        }
+        else
+        {
+            tk.lexema = "<";
+            tk.simbolo = smenor;
+        }
+    }
+    else if (c == (int)'>')
+    {
+        *c = fgetc(file);
+
+        if (c == (int)'=')
+        {
+            tk.lexema = ">=";
+            tk.simbolo = smaiorig;
+            *c = fgetc(file);
+        }
+        else
+        {
+            tk.lexema = ">";
+            tk.simbolo = smaior;
+        }
+    }
+    else
+    {
+        tk.lexema = "=";
+        tk.simbolo = sig;
+        *c = fgetc(file);
+    }
+
+    return tk;
 }
 
-void handlePunct(int c){
+token handlePunct(int *c, FILE *file){
+    token tk;
+    return tk;
+}
 
+token handleError(int *c, FILE *file){
+    token tk;
+    printf("error");
+    return tk;
+}
+
+token getToken(int *c, FILE *file){
+    token tk;
+    if (isdigit(*c))
+    {
+        tk = handleDigit(c, file);
+    }
+    else if (isalpha(*c))
+    {
+        tk = handleIdOrReserved(c, file);
+    }
+    else if (*c == (int)':')
+    {
+        tk = handleAttr(c, file);
+    }
+    else if (*c == (int)'+' || *c == (int)'-' || *c == (int)'*')
+    {
+        tk = handleOpAri(c, file);
+    }
+    else if (*c == (int)'!' || *c == (int)'<' || *c == (int)'>' || *c == (int)'=')
+    {
+        tk = handleOpRel(c, file);
+    }
+    else if (*c == (int)';' || *c == (int)',' || *c == (int)'(' || *c == (int)')' || *c == (int)'.')
+    {
+        tk = handlePunct(c, file);
+    }
+    else
+    {
+        tk = handleError(c, file);
+    }
+
+    return tk;
 }
 
 int main(int argc, char *argv[])
@@ -75,25 +197,40 @@ int main(int argc, char *argv[])
     }
 
     int c;
-    FILE *file = fopen(argv[1]);
+    FILE *file = fopen(argv[1], "r");
 
     // Could not open file
     if (file == NULL){
-        printf("Could not open %s.\n", );
+        printf("Could not open %s.\n", argv[1]);
         return 1;
     }
+    token *ptr = tokenList;
+    token newToken;
 
     c = fgetc(file);
 
     while(c != EOF)
     {
-        while((c == '{' || isWhitespace(c)) && c != EOF)
+        while((c == (int)'{' || isWhitespace(c)) && c != EOF)
         {
-
+            if(c == (int)'{'){
+                while(c != (int)'}' && c != EOF)
+                {
+                    c = fgetc(file);
+                }
+                c = fgetc(file);
+            }
+            while(isWhitespace(c) && c != EOF){
+                c = fgetc(file);
+            }
+        }
+        if (c != EOF){
+            newToken = getToken(&c, file);
+            storeToken(newToken, ptr);
         }
     }
 
-    for(token ptk = tk; ptk == NULL; ptk = ptk->next)
+    for(token *ptk = tokenList; ptk == NULL; ptk = ptk->next)
     {
         free(ptk);
     }
