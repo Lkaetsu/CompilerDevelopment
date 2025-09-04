@@ -10,7 +10,7 @@ enum simbolosReservados {sprograma, sinicio, sfim, sprocedimento, sfuncao,
                          svirgula, sabre_parenteses, sfecha_parenteses,
                          smaior, smaiorig, sig, smenor, smenorig, sdif,
                          smais, smenos, smult, sdiv, se, sou, snao,
-                         sdoispontos, sverdadeiro, sfalso};
+                         sdoispontos, sverdadeiro, sfalso, serro};
 
 typedef struct token {
     char *lexema;
@@ -18,11 +18,18 @@ typedef struct token {
     struct token *next;
 }token;
 
-token *tokenList;
+token *tokenList = NULL;
 
 void storeToken(token tk, token *ptr){
-    ptr = malloc(sizeof(token));
-    strcpy(ptr->lexema, tk.lexema);
+    printf("\"%s\": %d\n", tk.lexema, tk.simbolo);
+//    if (ptr == NULL){
+//        ptr = malloc(sizeof(token));
+//    }
+//    else{
+//        ptr->next = malloc(sizeof(token));
+//        ptr = ptr->next;
+//    }
+    ptr->lexema = tk.lexema;
     ptr->simbolo = tk.simbolo;
     ptr->next = NULL;
 }
@@ -36,13 +43,139 @@ int isWhitespace(int c){
     return 0;
 }
 
+token handleError(int *c, FILE *file){
+    token tk;
+    tk.lexema = malloc(sizeof(char)*255);
+    char aux[255];
+    int i = 0;
+
+    do
+    {
+        aux[i] = (char) *c;
+        *c = fgetc(file);
+        i++;
+    }
+    while(!(isWhitespace(*c) || *c == ':' || *c == '+' ||
+            *c == '-' || *c == '*' || *c == '!' || *c == '<' ||
+            *c == '>' || *c == '=' || *c == ',' || *c == '(' ||
+            *c == ')' || *c == '.' || *c == EOF)
+    );
+    strcpy(tk.lexema, aux);
+    tk.simbolo = serro;
+
+    return tk;
+}
+
 token handleDigit(int *c, FILE *file){
     token tk;
+    tk.lexema = malloc(sizeof(char)*255);
+    char aux[255];
+    int i = 0;
+
+    do
+    {
+        aux[i] = (char) *c;
+        *c = fgetc(file);
+        i++;
+    }while(isdigit(*c));
+    strcpy(tk.lexema, aux);
+    tk.simbolo = snumero;
+
     return tk;
 }
 
 token handleIdOrReserved(int *c, FILE *file){
     token tk;
+    tk.lexema = malloc(sizeof(char)*255);
+    char aux[255];
+    int i = 0;
+
+    do
+    {
+        aux[i] = (char) *c;
+        *c = fgetc(file);
+        i++;
+    }while(isalnum(*c) || *c == '_');
+
+    strcpy(tk.lexema, aux);
+    tk.simbolo = sidentificador;
+
+    if (aux[0] == 'p')
+    {
+        if (strcmp(aux, "programa") == 0)
+            tk.simbolo = sprograma;
+        else if (strcmp(aux, "procedimento") == 0)
+            tk.simbolo = sprocedimento;
+    }
+    else if (aux[0] == 's')
+    {
+        if (strcmp(aux, "se") == 0)
+            tk.simbolo = sse;
+        else if (strcmp(aux, "senao") == 0)
+            tk.simbolo = ssenao;
+    }
+    else if (aux[0] == 'e')
+    {
+        if (strcmp(aux, "entao") == 0)
+            tk.simbolo = sentao;
+        else if (strcmp(aux, "enquanto") == 0)
+            tk.simbolo = senquanto;
+        else if (strcmp(aux, "escreva") == 0)
+            tk.simbolo = sescreva;
+        else if (strcmp(aux, "e") == 0)
+            tk.simbolo = se;
+    }
+    else if (aux[0] == 'f')
+    {
+        if (strcmp(aux, "faca") == 0)
+            tk.simbolo = sfaca;
+        else if (strcmp(aux, "fim") == 0)
+            tk.simbolo = sfim;
+        else if (strcmp(aux, "falso") == 0)
+            tk.simbolo = sfalso;
+        else if (strcmp(aux, "funcao") == 0)
+            tk.simbolo = sfuncao;
+    }
+    else if (aux[0] == 'i')
+    {
+        if (strcmp(aux, "inicio") == 0)
+            tk.simbolo = sinicio;
+        else if (strcmp(aux, "inteiro") == 0)
+            tk.simbolo = sinteiro;
+    }
+    else if (aux[0] == 'l')
+    {
+        if (strcmp(aux, "leia") == 0)
+            tk.simbolo = sleia;
+    }
+    else if (aux[0] == 'v')
+    {
+        if (strcmp(aux, "var") == 0)
+            tk.simbolo = svar;
+        else if (strcmp(aux, "verdadeiro") == 0)
+            tk.simbolo = sverdadeiro;
+    }
+    else if (aux[0] == 'b')
+    {
+        if (strcmp(aux, "booleano") == 0)
+            tk.simbolo = sbooleano;
+    }
+    else if (aux[0] == 'd')
+    {
+        if (strcmp(aux, "div") == 0)
+            tk.simbolo = sdiv;
+    }
+    else if (aux[0] == 'o')
+    {
+        if (strcmp(aux, "ou") == 0)
+            tk.simbolo = sou;
+    }
+    else if (aux[0] == 'n')
+    {
+        if (strcmp(aux, "nao") == 0)
+            tk.simbolo = snao;
+    }
+
     return tk;
 }
 
@@ -64,11 +197,11 @@ token handleAttr(int *c, FILE *file){
 token handleOpAri(int *c, FILE *file){
     token tk;
 
-    if (c == (int)'+'){
+    if (*c == (int)'+'){
         tk.lexema = "+";
         tk.simbolo = smais;
     }
-    else if (c == (int)'-')
+    else if (*c == (int)'-')
     {
         tk.lexema = "-";
         tk.simbolo = smenos;
@@ -86,10 +219,10 @@ token handleOpAri(int *c, FILE *file){
 token handleOpRel(int *c, FILE *file){
     token tk;
 
-    if (c == (int)'!'){
+    if (*c == (int)'!'){
         *c = fgetc(file);
 
-        if (c == (int)'=')
+        if (*c == (int)'=')
         {
             tk.lexema = "!=";
             tk.simbolo = sdif;
@@ -97,14 +230,15 @@ token handleOpRel(int *c, FILE *file){
         }
         else
         {
-            printf("error");
+            token newTk;
+            newTk = handleError(c, file);
         }
     }
-    else if (c == (int)'<')
+    else if (*c == (int)'<')
     {
         *c = fgetc(file);
 
-        if (c == (int)'=')
+        if (*c == (int)'=')
         {
             tk.lexema = "<=";
             tk.simbolo = smenorig;
@@ -116,11 +250,11 @@ token handleOpRel(int *c, FILE *file){
             tk.simbolo = smenor;
         }
     }
-    else if (c == (int)'>')
+    else if (*c == (int)'>')
     {
         *c = fgetc(file);
 
-        if (c == (int)'=')
+        if (*c == (int)'=')
         {
             tk.lexema = ">=";
             tk.simbolo = smaiorig;
@@ -144,12 +278,35 @@ token handleOpRel(int *c, FILE *file){
 
 token handlePunct(int *c, FILE *file){
     token tk;
-    return tk;
-}
 
-token handleError(int *c, FILE *file){
-    token tk;
-    printf("error");
+    if (*c == (int)';')
+    {
+        tk.lexema = ";";
+        tk.simbolo = sponto_virgula;
+    }
+    else if (*c == (int)',')
+    {
+        tk.lexema = ",";
+        tk.simbolo = svirgula;
+    }
+    else if (*c == (int)'(')
+    {
+        tk.lexema = "(";
+        tk.simbolo = sabre_parenteses;
+    }
+    else if (*c == (int)')')
+    {
+        tk.lexema = ")";
+        tk.simbolo = sfecha_parenteses;
+    }
+    else
+    {
+        tk.lexema = ".";
+        tk.simbolo = sponto;
+    }
+
+    *c = fgetc(file);
+
     return tk;
 }
 
@@ -184,6 +341,7 @@ token getToken(int *c, FILE *file){
         tk = handleError(c, file);
     }
 
+
     return tk;
 }
 
@@ -192,7 +350,7 @@ int main(int argc, char *argv[])
     // No filename sent
     if (argc != 2)
     {
-        printf("Usage: lpd <filename>");
+        printf("Usage: ./lpd <filename>\n");
         return 1;
     }
 
@@ -204,6 +362,7 @@ int main(int argc, char *argv[])
         printf("Could not open %s.\n", argv[1]);
         return 1;
     }
+    printf("Opening file: %s\n", argv[1]);
     token *ptr = tokenList;
     token newToken;
 
@@ -232,10 +391,10 @@ int main(int argc, char *argv[])
 
     for(token *ptk = tokenList; ptk == NULL; ptk = ptk->next)
     {
+//        printf("%s: %d\n", ptk->lexema, ptk->simbolo);
         free(ptk);
     }
     fclose(file);
 
     return 0;
 }
-
