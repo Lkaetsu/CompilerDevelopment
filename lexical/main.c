@@ -18,25 +18,34 @@ typedef struct token {
     struct token *next;
 }token;
 
-token *tokenList = NULL;
+//typedef struct identifier {
+//    
+//} identifier ;
 
-void storeToken(token tk, token *ptr){
-    printf("\"%s\": %d\n", tk.lexema, tk.simbolo);
-//    if (ptr == NULL){
-//        ptr = malloc(sizeof(token));
-//    }
-//    else{
-//        ptr->next = malloc(sizeof(token));
-//        ptr = ptr->next;
-//    }
-    ptr->lexema = tk.lexema;
-    ptr->simbolo = tk.simbolo;
-    ptr->next = NULL;
+token *tokenList = NULL;
+int line = 1;
+
+void storeToken(token tk){
+    printf("[%s]: %d\n",tk.lexema, tk.simbolo);
+    token* newTk = (token*)malloc(sizeof(token));
+    if (!newTk) {
+        printf("Memory allocation failed\n");
+        exit(1);
+    }
+    newTk->lexema = tk.lexema;
+    newTk->simbolo = tk.simbolo;
+    newTk->next = tokenList;
+    tokenList = newTk;
 }
+
 
 int isWhitespace(int c){
     // 8, 9, 10, 32 are whitespace
     if (c == (int)'\b' || c == (int)'\t' || c == (int)'\n' || c == (int)' '){
+        if (c == (int)'\n')
+        {
+            line++;
+        }
         return 1;
     }
 
@@ -60,8 +69,10 @@ token handleError(int *c, FILE *file){
             *c == '>' || *c == '=' || *c == ',' || *c == '(' ||
             *c == ')' || *c == '.' || *c == EOF)
     );
+    aux[i] = '\0';
     strcpy(tk.lexema, aux);
     tk.simbolo = serro;
+    printf("Error in line %d: Unrecognized identifier \'%s\'\n", line, tk.lexema);
 
     return tk;
 }
@@ -78,6 +89,7 @@ token handleDigit(int *c, FILE *file){
         *c = fgetc(file);
         i++;
     }while(isdigit(*c));
+    aux[i] = '\0';
     strcpy(tk.lexema, aux);
     tk.simbolo = snumero;
 
@@ -96,7 +108,7 @@ token handleIdOrReserved(int *c, FILE *file){
         *c = fgetc(file);
         i++;
     }while(isalnum(*c) || *c == '_');
-
+    aux[i] = '\0';
     strcpy(tk.lexema, aux);
     tk.simbolo = sidentificador;
 
@@ -377,6 +389,9 @@ int main(int argc, char *argv[])
                 {
                     c = fgetc(file);
                 }
+                if (c == EOF){
+                    printf("Error in line %d: Unterminated comment.", line);
+                }
                 c = fgetc(file);
             }
             while(isWhitespace(c) && c != EOF){
@@ -385,13 +400,13 @@ int main(int argc, char *argv[])
         }
         if (c != EOF){
             newToken = getToken(&c, file);
-            storeToken(newToken, ptr);
+            storeToken(newToken);
         }
     }
 
     for(token *ptk = tokenList; ptk == NULL; ptk = ptk->next)
     {
-//        printf("%s: %d\n", ptk->lexema, ptk->simbolo);
+        printf("%s: %d\n", ptk->lexema, ptk->simbolo);
         free(ptk);
     }
     fclose(file);
