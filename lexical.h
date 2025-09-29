@@ -1,3 +1,6 @@
+#ifndef LEXICAL_H
+#define LEXICAL_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,48 +15,21 @@ enum simbolosReservados {sprograma, sinicio, sfim, sprocedimento, sfuncao,
                          smais, smenos, smult, sdiv, se, sou, snao,
                          sdoispontos, sverdadeiro, sfalso, serro};
 
-enum identifierTypes {tnomedeprograma, tvariavel, tinteiro, tbooleano,
-                      tprocedimento, tfuncaointeiro, tfuncaobooleana};
-
 typedef struct token {
     char *lexema;
     int simbolo;
-    struct token *next;
+//    struct token *next;
 }token;
 
-typedef struct identifier {
-    char *lexema;
-    int type;
-    char *scope;
-    void *address;
-} identifier;
-
-typedef struct Stack {
-    identifier id[1000];
-    int top;
-} Stack;
-
-Stack symbolsTable;
 int line = 1;
+FILE *file;
+int c;
 //token *tokenList = NULL;
 
-void insertTable(char *lexema, int type, char *scope, void *address){
-    symbolsTable.top++;
-    symbolsTable.id[symbolsTable.top].lexema = lexema;
-    symbolsTable.id[symbolsTable.top].type = type;
-    symbolsTable.id[symbolsTable.top].scope = scope;
-    symbolsTable.id[symbolsTable.top].address = address;
+void lexicalSetup(FILE *codeFile){
+    file = codeFile;
+    c = fgetc(file);
 }
-
-void placeTypeTable(int type){
-    for(int i = symbolsTable.top; i > -1; i--)
-    {
-        if(symbolsTable.id[i].type == tvariavel){
-            symbolsTable.id[i].type = type;
-        }
-    }
-}
-
 
 //void storeToken(token tk){
 //    printf("[%s]: %d\n",tk.lexema, tk.simbolo);
@@ -82,7 +58,7 @@ int isWhitespace(int c){
     return 0;
 }
 
-token handleError(int *c, FILE *file){
+token handleError(){
     token tk;
     tk.lexema = malloc(sizeof(char)*255);
     char aux[255];
@@ -90,14 +66,14 @@ token handleError(int *c, FILE *file){
 
     do
     {
-        aux[i] = (char) *c;
-        *c = fgetc(file);
+        aux[i] = (char) c;
+        c = fgetc(file);
         i++;
     }
-    while(!(isWhitespace(*c) || *c == ':' || *c == '+' ||
-            *c == '-' || *c == '*' || *c == '!' || *c == '<' ||
-            *c == '>' || *c == '=' || *c == ',' || *c == '(' ||
-            *c == ')' || *c == '.' || *c == EOF)
+    while(!(isWhitespace(c) || c == ':' || c == '+' ||
+            c == '-' || c == '*' || c == '!' || c == '<' ||
+            c == '>' || c == '=' || c == ',' || c == '(' ||
+            c == ')' || c == '.' || c == EOF)
     );
     aux[i] = '\0';
     strcpy(tk.lexema, aux);
@@ -107,7 +83,7 @@ token handleError(int *c, FILE *file){
     return tk;
 }
 
-token handleDigit(int *c, FILE *file){
+token handleDigit(){
     token tk;
     tk.lexema = malloc(sizeof(char)*255);
     char aux[255];
@@ -115,10 +91,10 @@ token handleDigit(int *c, FILE *file){
 
     do
     {
-        aux[i] = (char) *c;
-        *c = fgetc(file);
+        aux[i] = (char) c;
+        c = fgetc(file);
         i++;
-    }while(isdigit(*c));
+    }while(isdigit(c));
     aux[i] = '\0';
     strcpy(tk.lexema, aux);
     tk.simbolo = snumero;
@@ -126,7 +102,7 @@ token handleDigit(int *c, FILE *file){
     return tk;
 }
 
-token handleIdOrReserved(int *c, FILE *file){
+token handleIdOrReserved(){
     token tk;
     tk.lexema = malloc(sizeof(char)*255);
     char aux[255];
@@ -134,10 +110,10 @@ token handleIdOrReserved(int *c, FILE *file){
 
     do
     {
-        aux[i] = (char) *c;
-        *c = fgetc(file);
+        aux[i] = (char) c;
+        c = fgetc(file);
         i++;
-    }while(isalnum(*c) || *c == '_');
+    }while(isalnum(c) || c == '_');
     aux[i] = '\0';
     strcpy(tk.lexema, aux);
     tk.simbolo = sidentificador;
@@ -221,13 +197,13 @@ token handleIdOrReserved(int *c, FILE *file){
     return tk;
 }
 
-token handleAttr(int *c, FILE *file){
+token handleAttr(){
     token tk;
-    *c = fgetc(file);
-    if (*c == (int)'=') {
+    c = fgetc(file);
+    if (c == (int)'=') {
         tk.lexema = ":=";
         tk.simbolo = satribuicao;
-        *c = fgetc(file);
+        c = fgetc(file);
     } else {
         tk.lexema = ":";
         tk.simbolo = sdoispontos;
@@ -236,14 +212,14 @@ token handleAttr(int *c, FILE *file){
     return tk;
 }
 
-token handleOpAri(int *c, FILE *file){
+token handleOpAri(){
     token tk;
 
-    if (*c == (int)'+'){
+    if (c == (int)'+'){
         tk.lexema = "+";
         tk.simbolo = smais;
     }
-    else if (*c == (int)'-')
+    else if (c == (int)'-')
     {
         tk.lexema = "-";
         tk.simbolo = smenos;
@@ -253,22 +229,22 @@ token handleOpAri(int *c, FILE *file){
         tk.lexema = "*";
         tk.simbolo = smult;
     }
-    *c = fgetc(file);
+    c = fgetc(file);
 
     return tk;
 }
 
-token handleOpRel(int *c, FILE *file){
+token handleOpRel(){
     token tk;
 
-    if (*c == (int)'!'){
-        *c = fgetc(file);
+    if (c == (int)'!'){
+        c = fgetc(file);
 
-        if (*c == (int)'=')
+        if (c == (int)'=')
         {
             tk.lexema = "!=";
             tk.simbolo = sdif;
-            *c = fgetc(file);
+            c = fgetc(file);
         }
         else
         {
@@ -276,15 +252,15 @@ token handleOpRel(int *c, FILE *file){
             newTk = handleError(c, file);
         }
     }
-    else if (*c == (int)'<')
+    else if (c == (int)'<')
     {
-        *c = fgetc(file);
+        c = fgetc(file);
 
-        if (*c == (int)'=')
+        if (c == (int)'=')
         {
             tk.lexema = "<=";
             tk.simbolo = smenorig;
-            *c = fgetc(file);
+            c = fgetc(file);
         }
         else
         {
@@ -292,15 +268,15 @@ token handleOpRel(int *c, FILE *file){
             tk.simbolo = smenor;
         }
     }
-    else if (*c == (int)'>')
+    else if (c == (int)'>')
     {
-        *c = fgetc(file);
+        c = fgetc(file);
 
-        if (*c == (int)'=')
+        if (c == (int)'=')
         {
             tk.lexema = ">=";
             tk.simbolo = smaiorig;
-            *c = fgetc(file);
+            c = fgetc(file);
         }
         else
         {
@@ -312,31 +288,31 @@ token handleOpRel(int *c, FILE *file){
     {
         tk.lexema = "=";
         tk.simbolo = sig;
-        *c = fgetc(file);
+        c = fgetc(file);
     }
 
     return tk;
 }
 
-token handlePunct(int *c, FILE *file){
+token handlePunct(){
     token tk;
 
-    if (*c == (int)';')
+    if (c == (int)';')
     {
         tk.lexema = ";";
         tk.simbolo = sponto_virgula;
     }
-    else if (*c == (int)',')
+    else if (c == (int)',')
     {
         tk.lexema = ",";
         tk.simbolo = svirgula;
     }
-    else if (*c == (int)'(')
+    else if (c == (int)'(')
     {
         tk.lexema = "(";
         tk.simbolo = sabre_parenteses;
     }
-    else if (*c == (int)')')
+    else if (c == (int)')')
     {
         tk.lexema = ")";
         tk.simbolo = sfecha_parenteses;
@@ -347,69 +323,75 @@ token handlePunct(int *c, FILE *file){
         tk.simbolo = sponto;
     }
 
-    *c = fgetc(file);
+    c = fgetc(file);
 
     return tk;
 }
 
-token getToken(int *c, FILE *file){
+token getToken(){
     token tk;
-    if (isdigit(*c))
+    if (isdigit(c))
     {
-        tk = handleDigit(c, file);
+        tk = handleDigit();
     }
-    else if (isalpha(*c))
+    else if (isalpha(c))
     {
-        tk = handleIdOrReserved(c, file);
+        tk = handleIdOrReserved();
     }
-    else if (*c == (int)':')
+    else if (c == (int)':')
     {
-        tk = handleAttr(c, file);
+        tk = handleAttr();
     }
-    else if (*c == (int)'+' || *c == (int)'-' || *c == (int)'*')
+    else if (c == (int)'+' || c == (int)'-' || c == (int)'*')
     {
-        tk = handleOpAri(c, file);
+        tk = handleOpAri();
     }
-    else if (*c == (int)'!' || *c == (int)'<' || *c == (int)'>' || *c == (int)'=')
+    else if (c == (int)'!' || c == (int)'<' || c == (int)'>' || c == (int)'=')
     {
-        tk = handleOpRel(c, file);
+        tk = handleOpRel();
     }
-    else if (*c == (int)';' || *c == (int)',' || *c == (int)'(' || *c == (int)')' || *c == (int)'.')
+    else if (c == (int)';' || c == (int)',' || c == (int)'(' || c == (int)')' || c == (int)'.')
     {
-        tk = handlePunct(c, file);
+        tk = handlePunct();
     }
     else
     {
-        tk = handleError(c, file);
+        tk = handleError();
     }
 
 
     return tk;
 }
 
-token lexical(FILE *file, int *c){
+token lexical(){
     token tk;
-    while((*c == (int)'{' || isWhitespace(*c)) && *c != EOF)
+    while((c == (int)'{' || isWhitespace(c)) && c != EOF)
     {
-        if(*c == (int)'{'){
-            while(*c != (int)'}' && *c != EOF)
+        if(c == (int)'{'){
+            while(c != (int)'}' && c != EOF)
             {
-                if(*c == (int)'\n'){
+                if(c == (int)'\n'){
                     line++;
                 }
-                *c = fgetc(file);
+                c = fgetc(file);
             }
-            if (*c == EOF){
+            if (c == EOF){
                 printf("Error in line %d: Unterminated comment.", line);
             }
-            *c = fgetc(file);
+            c = fgetc(file);
         }
-        while(isWhitespace(*c) && *c != EOF){
-            *c = fgetc(file);
+        while(isWhitespace(c) && c != EOF){
+            c = fgetc(file);
         }
     }
-    if (*c != EOF){
+    if (c != EOF){
         tk = getToken(c, file);
-        return tk;
+    } else {
+        tk.lexema = "EOF";
+        tk.simbolo = -1;
     }
+
+    return tk;
 }
+
+#endif

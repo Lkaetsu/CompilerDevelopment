@@ -1,4 +1,6 @@
 #include "lexical.h"
+#include "syntax.h"
+#include "semantic.h"
 
 int main(int argc, char *argv[])
 {
@@ -9,21 +11,20 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    FILE *file = fopen(argv[1], "r");
-    int c;
+    FILE *codeFile = fopen(argv[1], "r");
 
     // Could not open file
-    if (file == NULL){
+    if (codeFile == NULL){
         printf("Could not open %s.\n", argv[1]);
         return 1;
     }
     printf("Opening file: %s\n", argv[1]);
     token tk;
-    c = fgetc(file);
+    lexicalSetup(codeFile);
 
     while(c != EOF)
     {
-        tk = lexical(file, &c);
+        tk = lexical();
         printf("[%s]: %d\n",tk.lexema, tk.simbolo);
     }
     fclose(file);
