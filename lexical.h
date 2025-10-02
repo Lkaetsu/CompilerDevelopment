@@ -48,11 +48,6 @@ void lexicalSetup(FILE *codeFile){
 int isWhitespace(int c){
     // 8, 9, 10, 32 are whitespace
     if (c == (int)'\b' || c == (int)'\t' || c == (int)'\n' || c == (int)' '){
-        if (c == (int)'\n')
-        {
-            printf("\nline++ = %d\n", line);
-            line++;
-        }
         return 1;
     }
 
@@ -371,9 +366,9 @@ token lexical(){
         if(c == (int)'{'){
             while(c != (int)'}' && c != EOF)
             {
-                // if(c == (int)'\n'){
-                //     line++;
-                // }
+                if(c == '\n'){
+                    line++;
+                }
                 c = fgetc(file);
             }
             if (c == EOF){
@@ -382,6 +377,9 @@ token lexical(){
             c = fgetc(file);
         }
         while(isWhitespace(c) && c != EOF){
+            if(c == '\n'){
+                line++;
+            }
             c = fgetc(file);
         }
     }
