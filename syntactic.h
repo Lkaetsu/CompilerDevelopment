@@ -233,11 +233,11 @@ void ifAnalysis(){
     tk = lexical();
     expressionAnalysis();
     if (tk.simbolo == sentao){
-        printf("entao ");
+        printf("entao \n");
         tk = lexical();
         simpleCommandAnalysis();
         if (tk.simbolo == ssenao){
-            printf("senao ");
+            printf("senao \n");
             tk = lexical();
             simpleCommandAnalysis();
         }
@@ -252,11 +252,11 @@ void whileAnalysis(){
 //    auxrot1 = label;
 //    codeGen(label, NULL, ´´, ´´);
 //    label++;
-    printf("<comando enquanto> -> enquanto ");
+    printf("<comando enquanto> -> enquanto \n");
     tk = lexical();
     expressionAnalysis();
     if (tk.simbolo == sfaca){
-        printf("faca ");
+        printf("faca \n");
 //        auxrot2 = label;
 //        codeGen(´´, JMPF, label, ´´);   // Jump if false
 //        label++;
