@@ -1,5 +1,5 @@
 #include "lexical.h"
-#include "syntax.h"
+#include "syntactic.h"
 #include "semantic.h"
 
 int main(int argc, char *argv[])
@@ -22,11 +22,16 @@ int main(int argc, char *argv[])
     token tk;
     lexicalSetup(codeFile);
 
-    while(c != EOF)
-    {
-        tk = lexical();
-        printf("[%s]: %d\n",tk.lexema, tk.simbolo);
-    }
+///   Code for getting all tokens and testing lexical
+//    while(c != EOF)
+//    {
+//        tk = lexical();
+//        printf("[%s]: %d\n",tk.lexema, tk.simbolo);
+//    }
+
+    syntactical();
+
     fclose(file);
+
     return 0;
 }

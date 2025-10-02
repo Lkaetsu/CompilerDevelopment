@@ -7,7 +7,7 @@ enum identifierTypes {tnomedeprograma, tvariavel, tinteiro, tbooleano,
 typedef struct identifier {
     char *lexema;
     int type;
-    char *scope;
+    char scope;
     void *address;
 } identifier;
 
