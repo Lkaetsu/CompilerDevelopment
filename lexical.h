@@ -50,6 +50,7 @@ int isWhitespace(int c){
     if (c == (int)'\b' || c == (int)'\t' || c == (int)'\n' || c == (int)' '){
         if (c == (int)'\n')
         {
+            printf("\nline++ = %d\n", line);
             line++;
         }
         return 1;
@@ -370,9 +371,9 @@ token lexical(){
         if(c == (int)'{'){
             while(c != (int)'}' && c != EOF)
             {
-                if(c == (int)'\n'){
-                    line++;
-                }
+                // if(c == (int)'\n'){
+                //     line++;
+                // }
                 c = fgetc(file);
             }
             if (c == EOF){
