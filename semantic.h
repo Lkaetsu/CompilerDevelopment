@@ -26,9 +26,20 @@ void insertTable(char *lexema, int type, char scope, void *address){
     symbolsTable.id[symbolsTable.top].address = address;
 }
 
-int searchDuplVarTable(char *lexema); /// Search until the first mark
+/// Conversão para posfixa
+Stack posfixConvertion(Stack expr){
+    
+    return expr;
+}
 
-int searchDeclVarTable(char *lexema); /// Search until the start of the stack
+/// Search until the first mark
+int searchDuplVarTable(char *lexema)
+{
+
+}
+
+/// Search until the start of the stack
+int searchDeclVarTable(char *lexema); 
 
 int searchDeclProcTable(char* lexema);
 
