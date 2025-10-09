@@ -42,10 +42,10 @@ void procCallAnalysis(){
 }
 
 void factorAnalysis(){
-    printf("<fator> -> ");
+    // printf("<fator> -> ");
     int ind;
     if (tk.simbolo == sidentificador){      // Variable or function
-        printf("%s ", tk.lexema);
+        // printf("%s ", tk.lexema);
 //        ind = searchTable(tk.lexema, level, ind);
 //        if (ind){
 //            if (symbolsTable.id[ind].type == tfuncaointeiro ||
@@ -61,27 +61,27 @@ void factorAnalysis(){
 //        }
     } else {
         if (tk.simbolo == snumero){         // Number
-            printf("%s ", tk.lexema);
+            // printf("%s ", tk.lexema);
             tk = lexical();
 
         } else if (tk.simbolo == snao){
-            printf("%s ", tk.lexema);
+            // printf("%s ", tk.lexema);
             tk = lexical();
             factorAnalysis();
         } else if (tk.simbolo == sabre_parenteses){
-            printf("%s ", tk.lexema);
+            // printf("%s ", tk.lexema);
             tk = lexical();
             expressionAnalysis();
 
             if (tk.simbolo == sfecha_parenteses){
-                printf("%s ", tk.lexema);
+                // printf("%s ", tk.lexema);
                 tk = lexical();
             } else {
                 printf("Error in line %d: Unclosed '(' in expression.");
                 exit(-1);
             }
         } else if (tk.simbolo == sverdadeiro || tk.simbolo == sfalso){
-            printf("%s ", tk.lexema);
+            // printf("%s ", tk.lexema);
             tk = lexical();
         } else {
             printf("Error in line %d: Unexpected token '%s' in place of an expression.", line, tk.lexema);
@@ -91,52 +91,53 @@ void factorAnalysis(){
 }
 
 void termAnalysis(){
-    printf("<termo> -> ");
+    // printf("<termo> -> ");
     factorAnalysis();
     while(tk.simbolo == smult || tk.simbolo == sdiv ||
           tk.simbolo == se)
     {
-        printf("%s ", tk.lexema);
+        // printf("%s ", tk.lexema);
         tk = lexical();
         factorAnalysis();
     }
 }
 
 void simpleExpressionAnalysis(){
-    printf("<expressao simples> -> ");
+    // printf("<expressao simples> -> ");
     if (tk.simbolo == smais || tk.simbolo == smenos){
-        printf("%s ", tk.lexema);
+        // printf("%s ", tk.lexema);
         tk = lexical();
     }
     termAnalysis();
     while(tk.simbolo == smais || tk.simbolo == smenos ||
           tk.simbolo == sou)
     {
-        printf("%s ", tk.lexema);
+        // printf("%s ", tk.lexema);
         tk = lexical();
         termAnalysis();
     }
 }
 
 void expressionAnalysis(){
-    printf("<expressao> -> ");
+    /// TODO: guardar todos os tokens de uma expressão para transformá-la em pósfixa
+    // printf("<expressao> -> ");
     simpleExpressionAnalysis();
     if (tk.simbolo == smaior || tk.simbolo == smaiorig ||
         tk.simbolo == smenor || tk.simbolo == smenorig ||
         tk.simbolo == sdif)
     {
-        printf("%s ", tk.lexema);
+        // printf("%s ", tk.lexema);
         tk = lexical();
         simpleExpressionAnalysis();
     }
 }
 
 void funcDeclAnalysis(){
-    printf("<declaracao de funcao> -> funcao ");
+    // printf("<declaracao de funcao> -> funcao ");
     tk = lexical();
     char level = 'L';       // Marks the start of the function for searches
     if (tk.simbolo = sidentificador){
-        printf("%s", tk.lexema);
+        // printf("%s", tk.lexema);
 //        if (!searchDeclProcTable(tk.lexema)){
 //            insertTable(tk.lexema, tprocedimento, level, ""/* label*/);
             tk = lexical();
@@ -173,18 +174,18 @@ void funcDeclAnalysis(){
 }
 
 void procDeclAnalysis(){
-    printf("<declaracao de procedimento> -> procedimento ");
+    // printf("<declaracao de procedimento> -> procedimento ");
     tk = lexical();
     char level = 'L';       // Marks the start of the procedure for searches
     if (tk.simbolo = sidentificador){
-        printf("%s", tk.lexema);
+        // printf("%s", tk.lexema);
 //        if (!searchDeclProcTable(tk.lexema)){
 //            insertTable(tk.lexema, tprocedimento, level, ""/* label*/);
 //            codeGen(label, NULL, ´´, ´´);       // Call will get this label from the symbolsTable
 //            label++;
             tk = lexical();
             if (tk.simbolo == sponto_virgula){
-                printf(";\n");
+                // printf(";\n");
                 blockAnalysis();
             } else {
                 printf("Error in line %d: Subroutine declarations must be ended by ';'.\n", line);
@@ -204,7 +205,7 @@ void procDeclAnalysis(){
 void subroutineAnalysis(){
 //    int auxrot, flag = 0;
     if (tk.simbolo == sprocedimento || tk.simbolo == sfuncao){
-        printf("<etapa de declaracao de sub-rotinas> -> ");
+        // printf("<etapa de declaracao de sub-rotinas> -> ");
 //        auxrot = label;
 //        codeGen(´´, JMP, label, ´´);      // Jump subroutines
 //        label++;
@@ -229,15 +230,15 @@ void subroutineAnalysis(){
 }
 
 void ifAnalysis(){
-    printf("<comando condicional> -> se ");
+    // printf("<comando condicional> -> se ");
     tk = lexical();
     expressionAnalysis();
     if (tk.simbolo == sentao){
-        printf("entao \n");
+        // printf("entao \n");
         tk = lexical();
         simpleCommandAnalysis();
         if (tk.simbolo == ssenao){
-            printf("senao \n");
+            // printf("senao \n");
             tk = lexical();
             simpleCommandAnalysis();
         }
@@ -252,11 +253,11 @@ void whileAnalysis(){
 //    auxrot1 = label;
 //    codeGen(label, NULL, ´´, ´´);
 //    label++;
-    printf("<comando enquanto> -> enquanto \n");
+    // printf("<comando enquanto> -> enquanto \n");
     tk = lexical();
     expressionAnalysis();
     if (tk.simbolo == sfaca){
-        printf("faca \n");
+        // printf("faca \n");
 //        auxrot2 = label;
 //        codeGen(´´, JMPF, label, ´´);   // Jump if false
 //        label++;
