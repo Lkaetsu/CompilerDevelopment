@@ -7,7 +7,7 @@ int main(int argc, char *argv[])
     // No filename sent
     if (argc != 2)
     {
-        printf("Usage: ./lpd <filename>\n");
+        printf("Usage: ./csd <filename>\n");
         return 1;
     }
 
