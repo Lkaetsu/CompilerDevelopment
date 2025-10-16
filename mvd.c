@@ -14,7 +14,7 @@ typedef struct token{
 int c;
 FILE *file;
 
-token getInstruction(int *execpile[], int *s){
+token getInstruction(int execpile[], int *s){
     token tk;
     tk.lexema = (char *) malloc(20 * sizeof(char));
     int i = 0;
@@ -52,11 +52,11 @@ token getInstruction(int *execpile[], int *s){
     } else if(strcmp(tk.lexema, "iinv") == 0){
         execpile[*s] = -(execpile[*s]);
     } else if(strcmp(tk.lexema, "iand") == 0){
-        if (execpile[*s - 1] == 1 && execpile[*s] == 1){
+        if(execpile[*s - 1] == 1 && execpile[*s] == 1){
 			execpile[*s - 1] = 1;
 		}
 		else{
-			execpile[*s - 1] = 0
+			execpile[*s - 1] = 0;
 			*s = *s - 1;
 		}
     } else if(strcmp(tk.lexema, "ior") == 0){
@@ -68,21 +68,60 @@ token getInstruction(int *execpile[], int *s){
 			*s = *s - 1;
 		}
     } else if(strcmp(tk.lexema, "ineg") == 0){
-		*execpile[*s] = 1 - *execpile[*s];
+		execpile[*s] = 1 - execpile[*s];
     } else if(strcmp(tk.lexema, "icme") == 0){
-        tk.tipo = icm
+        if(execpile[*s - 1] < execpile[*s]){
+            execpile[*s - 1] = 1;
+        }
+        else {
+            execpile[*s - 1] = 0;
+            *s = *s - 1;
+        }
     } else if(strcmp(tk.lexema, "icma") == 0){
-        tk.tipo = icma;
+        if(execpile[*s - 1] > execpile[*s]){
+            execpile[*s - 1] = 1;
+        }
+        else{
+            execpile[*s - 1] = 0;
+            *s = *s - 1;
+        }
     } else if(strcmp(tk.lexema, "iceq") == 0){
-        tk.tipo = iceq;
+        if(execpile[*s - 1] == execpile[*s]){
+            execpile[*s - 1] = 1;
+        }
+        else{
+            execpile[*s - 1] = 0;
+            *s = *s - 1;
+        }
     } else if(strcmp(tk.lexema, "icdif") == 0){
-        tk.tipo = icdif;
+        if(execpile[*s - 1] != execpile[*s]){
+            execpile[*s - 1] = 1;
+        }
+        else{
+            execpile[*s - 1] = 0;
+            *s = *s - 1;
+        }        
     } else if(strcmp(tk.lexema, "icmeq") == 0){
-        tk.tipo = icmeq;
+        if(execpile[*s - 1] <= execpile[*s]){
+            execpile[*s - 1] = 1;
+        }
+        else{
+            execpile[*s - 1] = 0;
+            *s = *s - 1;
+        }
     } else if(strcmp(tk.lexema, "icmaq") == 0){
-        tk;
-	
-	c = fgetc(file);
+        if(execpile[*s - 1] >= execpile[*s]){
+            execpile[*s - 1] = 1;
+        }
+        else{
+            execpile[*s - 1] = 0;
+            *s = *s - 1;
+        }
+    }
+
+    c = fgetc(file);
+    
+    return tk;
 }
 
 int main(int argc, char *argv[])
@@ -99,7 +138,7 @@ int main(int argc, char *argv[])
     c = fgetc(file); 
 
     while(c != EOF){
-        getInstruction(&execpile, &s);
+        getInstruction(execpile, &s);
     }
     return 0;
 }
