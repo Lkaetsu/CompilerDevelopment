@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 enum instructions {ildc, ildv, iadd, isub, imult, idivi,
                    iinv, iand, ior, ineg, icme, icma, iceq,
@@ -11,18 +12,77 @@ typedef struct token{
 }token;
 
 int c;
+FILE *file;
 
-token getToken(){
+token getInstruction(int *execpile[], int *s){
+    token tk;
+    tk.lexema = (char *) malloc(20 * sizeof(char));
+    int i = 0;
 
-}
-
-void getInstruction(){
-    
-    c = fgetc();
-}
-
-void getCommand(){
-    getInstruction()
+    while(c != ' ' && c != '\n' && c != EOF){
+        tk.lexema[i] = c;
+        i++;
+        c = fgetc(file);
+    }
+    tk.lexema[i] = '\0';
+    if(c == ' '){
+        c = fgetc(file);
+    }
+    if(c == '\n'){
+        c = fgetc(file);
+    }
+    if(strcmp(tk.lexema, "ildc") == 0){
+        *s = *s + 1; 
+        execpile[*s] = c;
+    } else if(strcmp(tk.lexema, "ildv") == 0){
+        *s = *s + 1;
+        execpile[*s] = c;
+    } else if(strcmp(tk.lexema, "iadd") == 0){
+        execpile[*s - 1] = execpile[*s - 1] + execpile[*s];
+        *s = *s - 1;
+    } else if(strcmp(tk.lexema, "isub") == 0){
+        execpile[*s - 1] = execpile[*s - 1] - execpile[*s];
+        *s = *s - 1;
+    } else if(strcmp(tk.lexema, "imult") == 0){
+        execpile[*s - 1] = execpile[*s - 1] * execpile[*s];
+        *s = *s - 1;
+    } else if(strcmp(tk.lexema, "idivi") == 0){
+        execpile[*s - 1] = execpile[*s - 1] / execpile[*s];
+        *s = *s - 1;
+    } else if(strcmp(tk.lexema, "iinv") == 0){
+        execpile[*s] = -(execpile[*s]);
+    } else if(strcmp(tk.lexema, "iand") == 0){
+        if (execpile[*s - 1] == 1 && execpile[*s] == 1){
+			execpile[*s - 1] = 1;
+		}
+		else{
+			execpile[*s - 1] = 0
+			*s = *s - 1;
+		}
+    } else if(strcmp(tk.lexema, "ior") == 0){
+        if(execpile[*s - 1] == 1 || execpile[*s] == 1){
+			execpile[*s - 1] = 1;
+		}
+		else{
+			execpile[*s - 1] = 0;
+			*s = *s - 1;
+		}
+    } else if(strcmp(tk.lexema, "ineg") == 0){
+		*execpile[*s] = 1 - *execpile[*s];
+    } else if(strcmp(tk.lexema, "icme") == 0){
+        tk.tipo = icm
+    } else if(strcmp(tk.lexema, "icma") == 0){
+        tk.tipo = icma;
+    } else if(strcmp(tk.lexema, "iceq") == 0){
+        tk.tipo = iceq;
+    } else if(strcmp(tk.lexema, "icdif") == 0){
+        tk.tipo = icdif;
+    } else if(strcmp(tk.lexema, "icmeq") == 0){
+        tk.tipo = icmeq;
+    } else if(strcmp(tk.lexema, "icmaq") == 0){
+        tk;
+	
+	c = fgetc(file);
 }
 
 int main(int argc, char *argv[])
@@ -32,10 +92,14 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    c = fgetc(); 
+    int execpile[1000], s = -1;
+
+    file = fopen(argv[1], "r");
+
+    c = fgetc(file); 
 
     while(c != EOF){
-        getCommand();
+        getInstruction(&execpile, &s);
     }
     return 0;
 }
