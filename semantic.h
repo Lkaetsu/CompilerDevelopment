@@ -56,6 +56,10 @@ void placeTypeTable(int type){
     }
 }
 
-void unstackLevel();
+void unstackLevel(){
+    for(int i = symbolsTable.top; symbolsTable.id[symbolsTable.top].scope != 0; i--){
+
+    }
+}
 
 #endif
