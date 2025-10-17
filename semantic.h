@@ -1,6 +1,11 @@
 #ifndef SEMANTIC_H
 #define SEMANTIC_H
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "lexical.h"
+
 enum identifierTypes {tnomedeprograma, tvariavel, tinteiro, tbooleano,
                       tprocedimento, tfuncaointeiro, tfuncaobooleana};
 
@@ -35,11 +40,31 @@ Stack posfixConvertion(Stack expr){
 /// Search until the first mark
 int searchDuplVarTable(char *lexema)
 {
-
+    int i;
+    for(i = symbolsTable.top; i < 0 || symbolsTable.id[i].scope != 0; i--){
+        if (symbolsTable.id[i].type == tinteiro || symbolsTable.id[i].type == tbooleano){
+            if(strcmp(symbolsTable.id[i].lexema, lexema) == 0){
+                return 1;
+            }
+        }
+    }
+    return 0;
 }
 
 /// Search until the start of the stack
-int searchDeclVarTable(char *lexema); 
+int searchDeclVarTable(char *lexema)
+{
+    int i;
+    for(i = symbolsTable.top; i < 0; i--){
+        if (symbolsTable.id[i].type == tinteiro || symbolsTable.id[i].type == tbooleano){
+            if(strcmp(symbolsTable.id[i].lexema, lexema) == 0){
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
 
 int searchDeclProcTable(char* lexema);
 
@@ -51,15 +76,20 @@ void placeTypeTable(int type){
     for(int i = symbolsTable.top; i > -1; i--)
     {
         if(symbolsTable.id[i].type == tvariavel){
-            symbolsTable.id[i].type = type;
+            if (type == sinteiro){
+                symbolsTable.id[i].type = tinteiro;
+            } else {
+                symbolsTable.id[i].type = tbooleano;
+            }
         }
     }
 }
 
 void unstackLevel(){
-    for(int i = symbolsTable.top; symbolsTable.id[symbolsTable.top].scope != 0; i--){
-
-    }
+    int i;
+    for(i = symbolsTable.top; i == 0 || symbolsTable.id[i].scope != 0; i--);
+    symbolsTable.top = i;
+    symbolsTable.id[i].scope = 0;
 }
 
 #endif
