@@ -117,6 +117,8 @@ token getInstruction(int execpile[], int *s){
             execpile[*s - 1] = 0;
             *s = *s - 1;
         }
+    } else if (strcmp(tk.lexema, "ijmp") == 0){
+        *s = c;
     }
 
     c = fgetc(file);
