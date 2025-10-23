@@ -33,12 +33,18 @@ void funcCallAnalysis();
 void funcCallAnalysis(){
     // printf("<chamada de funcao>\n");
     tk = lexical();
-    // Nothing to do on syntactic
+    if (searchDeclProcTable){
+        printf("Error in line %d: Function '%s' used, but not declared.", line, tk.lexema);
+        exit(-1);
+    }
 }
 
 void procCallAnalysis(){
     // printf("<chamada de procedimento>\n");
-    // Nothing to do on syntactic
+    if (searchDeclProcTable){
+        printf("Error in line %d: Procedure '%s' used, but not declared.", line, tk.lexema);
+        exit(-1);
+    }
 }
 
 void factorAnalysis(){
@@ -46,7 +52,7 @@ void factorAnalysis(){
     int ind;
     if (tk.simbolo == sidentificador){      // Variable or function
         // printf("%s ", tk.lexema);
-        ind = searchTable(tk.lexema, level, ind);
+        ind = searchTable(tk.lexema);
         if (ind){
             if (symbolsTable.id[ind].type == tfuncaointeiro ||
                 symbolsTable.id[ind].type == tfuncaobooleana)
@@ -309,7 +315,7 @@ void readAnalysis(){
         // printf("(");
         tk = lexical();
         if (tk.simbolo == sidentificador){
-            printf("%s", tk.lexema);
+            // printf("%s", tk.lexema);
             if (searchDeclVarTable(tk.lexema)){
                 tk = lexical();
                 if (tk.simbolo == sfecha_parenteses){
@@ -407,7 +413,7 @@ void typeAnalysis(){
         exit(-1);
     }
     else{
-        printf("%s", tk.lexema);
+        // printf("%s", tk.lexema);
         placeTypeTable(tk.simbolo);
     }
     tk = lexical();
