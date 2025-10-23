@@ -42,10 +42,8 @@ int searchDuplVarTable(char *lexema)
 {
     int i;
     for(i = symbolsTable.top; i < 0 || symbolsTable.id[i].scope != 0; i--){
-        if (symbolsTable.id[i].type == tinteiro || symbolsTable.id[i].type == tbooleano){
-            if(strcmp(symbolsTable.id[i].lexema, lexema) == 0){
-                return 1;
-            }
+        if(strcmp(symbolsTable.id[i].lexema, lexema) == 0){
+            return 1;
         }
     }
     return 0;
@@ -65,15 +63,50 @@ int searchDeclVarTable(char *lexema)
     return 0;
 }
 
+/// Search until the start of the stack
+int searchDeclProcTable(char* lexema)
+{
+    int i;
+    for(i = symbolsTable.top; i < 0; i--){
+        if (symbolsTable.id[i].type == tprocedimento){
+            if(strcmp(symbolsTable.id[i].lexema, lexema) == 0){
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
 
-int searchDeclProcTable(char* lexema);
+/// Search until the start of the stack
+int searchDeclVarFuncTable(char *lexema)
+{
+    int i;
+    for(i = symbolsTable.top; i < 0; i--){
+        if (symbolsTable.id[i].type == tfuncaointeiro || symbolsTable.id[i].type == tfuncaobooleana){
+            if(strcmp(symbolsTable.id[i].lexema, lexema) == 0){
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
 
-int searchDeclVarFuncTable(char *lexema);
-
-int searchTable(char *lexema);
+/// Search until the start of the stack
+int searchTable(char *lexema)
+{
+    int i;
+    for(i = symbolsTable.top; i < 0; i--){
+        if(symbolsTable.id[i].type == tinteiro || symbolsTable.id[i].type == tbooleano || symbolsTable.id[i].type == tfuncaointeiro || symbolsTable.id[i].type == tfuncaobooleana){
+            if(strcmp(symbolsTable.id[i].lexema, lexema) == 0){
+                return i;
+            }
+        }
+    }
+    return 0;
+}
 
 void placeTypeTable(int type){
-    for(int i = symbolsTable.top; i > -1; i--)
+    for(int i = symbolsTable.top; i < 0 || symbolsTable.id[i].scope != 0; i--)
     {
         if(symbolsTable.id[i].type == tvariavel){
             if (type == sinteiro){
