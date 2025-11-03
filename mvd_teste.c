@@ -1,21 +1,49 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #define buffer 24
 
 enum instructions {ildc, ildv, iadd, isub, imult, idivi,
-                   iinv, iand, ior, ineg, icme, icma, iceq,
-                   icdif, icmeq, icmaq, ijmp, ijmpf, inum};
-
-typedef struct token{
-    char *lexema;
-    int tipo;
-}token;
-
-
-
+    iinv, iand, ior, ineg, icme, icma, iceq,
+    icdif, icmeq, icmaq, ijmp, ijmpf, inum};
+    
+    typedef struct token{
+        char *lexema;
+        int tipo;
+    }token;
+    
 int c;
 FILE *file;
+
+
+int findJmp(const char *linha, int numbj ){
+    if (linha == NULL) return 0; // maybe change this verification later
+
+    char numbuf[32];
+    snprintf(numbuf, sizeof(numbuf), "%d", numbj);
+    size_t nlen = strlen(numbuf);
+
+    for (const char *p = linha; *p != '\0'; ++p){ //the problem is somewhere over here
+        if (strncmp(p, "JMPF", 4) == 0) {
+            const char *q = p + 4;
+            while (isspace((unsigned char)*q)) q++;
+            if (strncmp(q, numbuf, nlen) == 0 && // or over here
+                (q[nlen] == '\0' || isspace((unsigned char)q[nlen]) || ispunct((unsigned char)q[nlen]))) {
+                return (int)(q - linha); // or here
+            }
+        }
+        if (strncmp(p, "JMP", 3) == 0) {
+            const char *q = p + 3;
+            while (isspace((unsigned char)*q)) q++;
+            if (strncmp(q, numbuf, nlen) == 0 &&
+                (q[nlen] == '\0' || isspace((unsigned char)q[nlen]) || ispunct((unsigned char)q[nlen]))) {
+                return (int)(q - linha);// maybe here
+            }
+        }
+    }
+    return 0;
+}
 
 void commandPile(token P[], int *i, FILE *file){
 
@@ -29,31 +57,34 @@ void commandPile(token P[], int *i, FILE *file){
         strcpy(linebuffer[linenumb], line);
         linenumb++;
     }
+    printf("ola 1");
     
-    // debug prints
-    // printf("%d\n", linenumb);
-    // for(int x = 0; x < linenumb; x++){
-    //     printf("%s", linebuffer[x]);
-    // }
-
     // check for jump commands
     for(int x = 0; x <= linenumb; x ++){
         strcpy(line, linebuffer[x]);
         for (int y = 0; y <= 4; y ++){
-            if (line[y] != NULL){
+            if (line[y] != '\0'){
                 numbj = line[y];
                 line[y] = x;
                 for (int z = 0; z <= linenumb; z ++){
                     strcpy(line, linebuffer[z]);
-                    for(int w = 0; )
+                    int jmppos = findJmp(line, numbj);
+                    if (jmppos != 0){ // here... I don't know
+                        line[jmppos] = numbj;
+                    }
                 }
             }
         }
     }
-
+    
+    // debug prints
+    printf("%d\n", linenumb);
+    for(int x = 0; x < linenumb; x++){
+        printf("%s", linebuffer[x]);
+    }
 }
 
-// pegar coisa do vetor de struct não do arquivo 
+// taking the things from the vector and executing they
 token getInstruction(token P[], int M[], int *s, int *i){
     token tk;
     tk.lexema = (char *) malloc(20 * sizeof(char));
@@ -166,6 +197,7 @@ token getInstruction(token P[], int M[], int *s, int *i){
 
 int main(int argc, char *argv[])
 {
+
     if(argc != 2){
         printf("Usage: ./mvd <filename>.o\n");
         return 1;
