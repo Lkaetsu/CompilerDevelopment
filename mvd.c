@@ -144,3 +144,43 @@ int main(int argc, char *argv[])
     }
     return 0;
 }
+
+
+
+
+
+
+
+
+
+
+int findJmp(const char *linha, int numbj, int linenumb){
+    if (linha == NULL) return 0; // maybe change this verification later
+
+    char numbuf[32];
+    snprintf(numbuf, sizeof(numbuf), "%d", numbj);
+    size_t nlen = strlen(numbuf);
+
+    for (const char *p = linha; *p != '\0'; ++p){
+        printf("analisando comando: %.4s\n", p);
+        if (strncmp(p, "JMPF", 4) == 0) {
+            //printf("achamo um jmpf aqui vamos trocar o numero dele\n");
+            const char *q = p + 4;
+            while (isspace((unsigned char)*q)) q++;
+            if (strncmp(q, numbuf, nlen) == 0 && 
+                (q[nlen] == '\0' || isspace((unsigned char)q[nlen]) || ispunct((unsigned char)q[nlen]))) {
+                return (int)(q - linha); 
+            }
+        }
+        if (strncmp(p, "JMP", 3) == 0) {
+            //printf("achamo um jmpf aqui vamos trocar o numero dele\n");
+            const char *q = p + 3;
+            while (isspace((unsigned char)*q)) q++;
+            if (strncmp(q, numbuf, nlen) == 0 &&
+                (q[nlen] == '\0' || isspace((unsigned char)q[nlen]) || ispunct((unsigned char)q[nlen]))) {
+                return (int)(q - linha);
+            }
+        }
+    }
+    return 0;
+}
