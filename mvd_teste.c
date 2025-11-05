@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <errno.h>
 #define buffer 24
 
 enum instructions {ildc, ildv, iadd, isub, imult, idivi,
@@ -17,6 +18,45 @@ int c;
 FILE *file;
 
 
+/* Replace the number (sequence of digits) that starts at position pos in
+   'line' with the decimal text of 'value'. line_size is the size of the
+   buffer 'line' points to (to avoid overflows). This function modifies
+   'line' in-place. If the new text doesn't fit, the function returns
+   without changing the line. */
+void replace_number_at(char *line, size_t line_size, int pos, int value) {
+    if (line == NULL || pos < 0) return;
+    size_t len = strlen(line);
+    if ((size_t)pos >= len) return;
+
+    size_t start = (size_t)pos;
+    /* find end of digit sequence starting at start */
+    size_t k = start;
+    while (k < len && isdigit((unsigned char)line[k])) k++;
+    size_t oldlen = k - start;
+
+    char numbuf[32];
+    int n = snprintf(numbuf, sizeof(numbuf), "%d", value);
+    if (n < 0) return; /* snprintf error */
+    size_t newlen = (size_t)n;
+
+    /* Check space */
+    if (len + (newlen > oldlen ? newlen - oldlen : 0) + 1 > line_size) {
+        /* not enough space to perform replacement safely */
+        return;
+    }
+
+    if (newlen <= oldlen) {
+        /* overwrite and shift left the remainder */
+        memcpy(&line[start], numbuf, newlen);
+        memmove(&line[start + newlen], &line[start + oldlen], len - (start + oldlen) + 1);
+    } else {
+        /* need to move remainder to the right first, then copy */
+        memmove(&line[start + newlen], &line[start + oldlen], len - (start + oldlen) + 1);
+        memcpy(&line[start], numbuf, newlen);
+    }
+}
+
+
 int findJmp(const char *linha, int numbj ){
     if (linha == NULL) return 0; // maybe change this verification later
 
@@ -26,6 +66,7 @@ int findJmp(const char *linha, int numbj ){
 
     for (const char *p = linha; *p != '\0'; ++p){ //the problem is somewhere over here
         if (strncmp(p, "JMPF", 4) == 0) {
+            //printf("achamo um jmpf aqui vamos trocar o numero dele\n");
             const char *q = p + 4;
             while (isspace((unsigned char)*q)) q++;
             if (strncmp(q, numbuf, nlen) == 0 && // or over here
@@ -34,6 +75,7 @@ int findJmp(const char *linha, int numbj ){
             }
         }
         if (strncmp(p, "JMP", 3) == 0) {
+            //printf("achamo um jmpf aqui vamos trocar o numero dele\n");
             const char *q = p + 3;
             while (isspace((unsigned char)*q)) q++;
             if (strncmp(q, numbuf, nlen) == 0 &&
@@ -45,34 +87,34 @@ int findJmp(const char *linha, int numbj ){
     return 0;
 }
 
+
 void commandPile(token P[], int *i, FILE *file){
 
     char line [buffer]; 
     char linebuffer[1000][buffer]; // line vector
     int linenumb = 0;
-    int numbj = 0;// variable to save the jump number provisionally
+    int numbj;// variable to save the jump number provisionally
 
     // reading and storing the lines on the line vector
     while (fgets(line, buffer, file) != NULL){
         strcpy(linebuffer[linenumb], line);
         linenumb++;
     }
-    printf("ola 1");
+    
+    
     
     // check for jump commands
-    for(int x = 0; x <= linenumb; x ++){
+    for(int x = 0; x < linenumb; x ++){
         strcpy(line, linebuffer[x]);
-        for (int y = 0; y <= 4; y ++){
-            if (line[y] != '\0'){
-                numbj = line[y];
-                line[y] = x;
-                for (int z = 0; z <= linenumb; z ++){
-                    strcpy(line, linebuffer[z]);
-                    int jmppos = findJmp(line, numbj);
-                    if (jmppos != 0){ // here... I don't know
-                        line[jmppos] = numbj;
-                    }
-                }
+        printf("analisando linha %d: %s", x, line);
+        for (int y = 0; y < 4; y++){
+            if(isdigit((unsigned char)line[y])){
+                printf("o numero do line[y] eh: %c\n", line[y]);
+                numbj = line[y] - '0';
+                printf("numero do numbj %d\n", numbj);
+                replace_number_at(line, buffer, y, x );
+                strcpy(linebuffer[x], line);
+
             }
         }
     }
@@ -82,6 +124,7 @@ void commandPile(token P[], int *i, FILE *file){
     for(int x = 0; x < linenumb; x++){
         printf("%s", linebuffer[x]);
     }
+    
 }
 
 // taking the things from the vector and executing they
@@ -210,6 +253,11 @@ int main(int argc, char *argv[])
     token P[1000];
 
     file = fopen(argv[1], "r");
+    if (file == NULL) {
+        fprintf(stderr, "Erro ao abrir '%s': %s\n", argv[1], strerror(errno));
+        return 1;
+    }
+    printf("Arquivo aberto: %s\n", argv[1]);
 
     commandPile(P, &i, file);
 
