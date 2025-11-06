@@ -52,7 +52,7 @@ void replace_number_at(char *line, size_t line_size, int pos, int value) {
 }
 
 // this one is use to find the jump
-void findJmp(char linebuffer[][buffer], int numbj, int linenumb){
+void findJmp(char linebuffer[][buffer], int numbj, int linenumb, int x){
 
     char line[buffer]; 
     int found_match = 0; 
@@ -83,12 +83,12 @@ void findJmp(char linebuffer[][buffer], int numbj, int linenumb){
 
                 if (extracted_num == numbj) {
                     int pos = (int)(p - line);
-                    replace_number_at(linebuffer[i], buffer, pos, linenumb);
+                    replace_number_at(linebuffer[i], buffer, pos, x);
                     found_match = 1;
                     
                 }
             }
-            break;
+            
         } 
 
         p = strstr(line, "JMP");
@@ -108,12 +108,12 @@ void findJmp(char linebuffer[][buffer], int numbj, int linenumb){
 
                 if (extracted_num == numbj) {
                     int pos = (int)(p - line);
-                    replace_number_at(linebuffer[i], buffer, pos, linenumb);
+                    replace_number_at(linebuffer[i], buffer, pos, x);
                     found_match = 1;
                     
                 }
             } 
-            break;
+            
         } 
     }
 }
@@ -152,7 +152,7 @@ void commandPile(token P[], int *i, FILE *file){
                     replace_number_at(line, buffer, y, x + 1); //yep a code without gambiarras is not a code
                     strcpy(linebuffer[x], line);
                     printf("numero da linha passada pro findjump %d\n", linenumb);
-                    findJmp(linebuffer, numbj, linenumb);
+                    findJmp(linebuffer, numbj, linenumb, x + 1);
                     
                 } else {
                         
@@ -163,7 +163,7 @@ void commandPile(token P[], int *i, FILE *file){
                         
                     replace_number_at(line, buffer, y, x + 1); // it was happen here to 
                     strcpy(linebuffer[x], line);
-                    findJmp(linebuffer, numbj, linenumb);
+                    findJmp(linebuffer, numbj, linenumb, x + 1);
                 }
 
 
