@@ -21,6 +21,12 @@ typedef struct Stack {
     int top;
 } Stack;
 
+typedef struct expr {
+    char *lexema[255];
+    int type[255];
+    int top;
+} Expr;
+
 Stack symbolsTable;
 
 void insertTable(char *lexema, int type, char scope, void *address){
@@ -31,10 +37,75 @@ void insertTable(char *lexema, int type, char scope, void *address){
     symbolsTable.id[symbolsTable.top].address = address;
 }
 
+int checkPrecedence(int type, int v[], int n){
+    int flag = 1;
+    for (int i = 0; i < n; i++){
+        flag = flag || (type != v[i]);
+    }
+
+    return flag;
+}
+
 /// Conversão para posfixa
-Stack posfixConvertion(Stack expr){
-    
-    return expr;
+void posfixConvertion(Expr expr){
+    int precedenceArit[] = {smenos, smais, sdiv, smult, sabre_parenteses};
+    Expr posfix, stack;
+    for (int i = 0; i < expr.top; i++){
+        // Se for variável ou número copia na saída
+        if (expr.type[i] == snumero || expr.type[i] == sverdadeiro || expr.type[i] == sfalso || expr.type[i] == sidentificador){
+            posfix.lexema[posfix.top] = expr.lexema[i];
+            posfix.type[posfix.top] = expr.type[i];
+            posfix.top++;
+        // Se for abre-parênteses empilha
+        } else if (expr.type[i] == sabre_parenteses) {
+            stack.lexema[stack.top] = expr.lexema[i];
+            stack.type[stack.top] = expr.type[i];
+            stack.top++;
+        // Se for fecha-parênteses, desempilha tudo copiando na saída até o primeiro abre-parênteses (desempilhando-o)
+        } else if (expr.type[i] == sfecha_parenteses){
+            for(int j = stack.top; j > 0 || stack.type[j] != sabre_parenteses; j--){
+                posfix.lexema[posfix.top] = stack.lexema[j];
+                posfix.type[posfix.top] = stack.type[j];
+                posfix.top++;
+                stack.top--;
+            }
+            stack.top--;
+        // Se for operador unário, desempilha todos os operadores até um operador de mult ou div ou mais ou menos ou abre-parenteses ou fim da pilha
+        } else if (expr.type[i] == spositivo || expr.type[i] == snegativo){
+            for(int j = stack.top; j > 0 || checkPrecedence(stack.type[j], precedenceArit, 5); j--){
+                posfix.lexema[posfix.top] = stack.lexema[j];
+                posfix.type[posfix.top] = stack.type[j];
+                posfix.top++;
+                stack.top--;
+            }
+            stack.lexema[stack.top] = expr.lexema[i];
+            stack.type[stack.top] = expr.type[i];
+            stack.top++;
+        // Se for operador mult ou div, desempilha todos os operadores até um operador mais ou menos ou abre-parenteses ou fim da pilha
+        } else if (expr.type[i] == smult || expr.type[i] == sdiv) {
+            for(int j = stack.top; j > 0 || checkPrecedence(stack.type[j], &(precedenceArit[2]), 3); j--){
+                posfix.lexema[posfix.top] = stack.lexema[j];
+                posfix.type[posfix.top] = stack.type[j];
+                posfix.top++;
+                stack.top--;
+            }
+            stack.lexema[stack.top] = expr.lexema[i];
+            stack.type[stack.top] = expr.type[i];
+            stack.top++;
+        // Se for operador mais ou menos, desempilha todos os operadores até um abre-parenteses ou fim da pilha
+        } else if (expr.type[i] == smais || expr.type[i] == smenos) {
+            for(int j = stack.top; j > 0 || stack.type[j] != sabre_parenteses; j--){
+                posfix.lexema[posfix.top] = stack.lexema[j];
+                posfix.type[posfix.top] = stack.type[j];
+                posfix.top++;
+                stack.top--;
+            }
+            stack.lexema[stack.top] = expr.lexema[i];
+            stack.type[stack.top] = expr.type[i];
+            stack.top++;
+        // Se for operador relacional, desempilha todos os operadores até um abre-parenteses ou fim da pilha
+        }// else if AQUI!!
+    }
 }
 
 /// Search until the first mark
