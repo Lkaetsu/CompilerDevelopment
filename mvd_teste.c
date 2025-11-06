@@ -152,7 +152,7 @@ void commandPile(token P[], int *i, FILE *file){
                     replace_number_at(line, buffer, y, x + 1); //yep a code without gambiarras is not a code
                     strcpy(linebuffer[x], line);
                     printf("numero da linha passada pro findjump %d\n", linenumb);
-                    findJmp(linebuffer, numbj, linenumb, x + 1);
+                    findJmp(linebuffer, numbj, linenumb, x + 1); // don't ask me why but it works 
                     
                 } else {
                         
@@ -163,7 +163,7 @@ void commandPile(token P[], int *i, FILE *file){
                         
                     replace_number_at(line, buffer, y, x + 1); // it was happen here to 
                     strcpy(linebuffer[x], line);
-                    findJmp(linebuffer, numbj, linenumb, x + 1);
+                    findJmp(linebuffer, numbj, linenumb, x + 1); // same here
                 }
 
 
