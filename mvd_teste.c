@@ -51,13 +51,54 @@ void replace_number_at(char *line, size_t line_size, int pos, int value) {
     }
 }
 
+#include <string.h>
+
+// Função ajustada com trava de segurança para buffer de 24 posições
+char* addCaracter(char line[], int linePos, int charToAdd) {
+    int len = (int)strlen(line);
+
+    // TRAVA DE SEGURANÇA 1: Buffer Cheio
+    // Se já temos 23 caracteres, não cabe mais nenhum (o 24º é o \0).
+    if (len >= 23) {
+        // Retorna a linha original sem alterações para evitar crash
+        return line; 
+    }
+
+    // TRAVA DE SEGURANÇA 2: Posição Inválida
+    // Não podemos inserir antes do início (linePos < 0) 
+    // nem muito depois do fim atual (linePos > len).
+    if (linePos < 0 || linePos > len) {
+        return line;
+    }
+
+    // MOVIMENTAÇÃO (Shifting)
+    // Começa do \0 e vai movendo tudo um passo para a direita
+    // para abrir espaço na posição 'linePos'.
+    for (int i = len; i >= linePos; i--) {
+        line[i + 1] = line[i];
+    }
+
+    // INSERÇÃO
+    line[linePos] = (char)charToAdd;
+
+    printf("linha apos addcaracter: %s\n", line);
+
+    // RETORNO
+    // Devolve o ponteiro para a própria linha modificada
+    return line;
+}
+
 // this one is use to find the jump
-void findJmp(char linebuffer[][buffer], int numbj, int linenumb, int x){
+void findJmp(char linebuffer[][buffer], char numbj[], int linenumb, int x){
 
-    char line[buffer]; 
-    int found_match = 0; 
+    char line[buffer]; // use to take a line from the linebuffer and look on it for the jump 
+    char *found_match = NULL; // use to check for the jump label on the line
+    int flagL = 0;// flag for check if the label had already been change or not
+    int Lpos = 0; // position of the L on the line
+    int numpos = 0; // position of the number on the line
+    printf("jump label dentro do findjmp: %s\n",numbj);
 
-    for (int i = 0; i < linenumb; i++){
+    for (int i = 0; i < linenumb; i++){ // will run thruogh the entire document looking for JMPF or JMP in this order
         strcpy(line, linebuffer[i]);
         
         char *p = NULL; 
@@ -70,23 +111,33 @@ void findJmp(char linebuffer[][buffer], int numbj, int linenumb, int x){
             p += jmp_len;
 
             while (*p != '\0' && isspace((unsigned char)*p)) {
-                p++; 
+                p++;
             }
 
-            if (isdigit((unsigned char)*p)) {
+            // check for 'L' indicating a label and save its position
+            if (*p == 'L') {
+                flagL = 1;
+                printf("flagL setado para 1\n");
+                Lpos = (int)(p - line);
+                p++;
+            }
+
+            // find the position of the number in the line
+            found_match = strstr(line, numbj);
+            if (found_match != NULL) {
+                numpos = (int)(found_match - line);
+            }
+
+            printf("found_match dentro do findjmp: %s\n", found_match);
+
+            if (found_match != 0 && flagL == 1) {
                 
+                int pos = (int)(p - line);
+                printf("posicao do L dentro do findjmp: %c\n", line[Lpos]);
+                line[Lpos] = '\0';
+                addCaracter(line, numpos, x);
+                printf("a linha atualizada eh: %s\n", line);
 
-                int extracted_num = atoi(p);
-                printf("o numero (JMPF) eh: %d\n", extracted_num);
-                printf("numero do numbj(dentro do findjump) %d\n", numbj);
-                printf("linha atual(dentro do findjump) %d\n", linenumb);
-
-                if (extracted_num == numbj) {
-                    int pos = (int)(p - line);
-                    replace_number_at(linebuffer[i], buffer, pos, x);
-                    found_match = 1;
-                    
-                }
             }
             
         } 
@@ -106,10 +157,10 @@ void findJmp(char linebuffer[][buffer], int numbj, int linenumb, int x){
 
                 int extracted_num = atoi(p);
 
-                if (extracted_num == numbj) {
+                int label_num = atoi(numbj);
+                if (extracted_num == label_num) {
                     int pos = (int)(p - line);
                     replace_number_at(linebuffer[i], buffer, pos, x);
-                    found_match = 1;
                     
                 }
             } 
@@ -119,12 +170,13 @@ void findJmp(char linebuffer[][buffer], int numbj, int linenumb, int x){
 }
 
 
+
 void commandPile(token P[], int *i, FILE *file){
 
     char line [buffer]; 
     char linebuffer[1000][buffer]; // line vector
     int linenumb = 0, x = 1;
-    int numbj;// variable to save the jump number provisionally
+    char numbj[3], L;// variable to save the jump number provisionally
 
     // reading and storing the lines on the line vector
     while (fgets(line, buffer, file) != NULL){
@@ -135,34 +187,35 @@ void commandPile(token P[], int *i, FILE *file){
     // check for jump commands
     for(; x < linenumb; x ++){
         strcpy(line, linebuffer[x]);
-        printf("analisando linha %d: %s\n", x, line);
 
         for (int y = 0; y < 4; y++){
-                
+
             if(isdigit((unsigned char)line[y])){
                     
                 if (y + 1 < 4 && isdigit((unsigned char)line[y+1])) {
                         
-                    numbj = (line[y] - '0') * 10 + (line[y+1] - '0');
+                    numbj[0] = line[y];
+                    numbj[1] = line[y+1];
+                    numbj[2] = '\0';
                         
-                    printf("o numero (2 digitos) eh: %c%c\n", line[y], line[y+1]);
-                    printf("numero do numbj %d\n", numbj);
-                    
+                    printf("numero do numbj %c%c\n", numbj[0], numbj[1]);
 
                     replace_number_at(line, buffer, y, x + 1); //yep a code without gambiarras is not a code
                     strcpy(linebuffer[x], line);
-                    printf("numero da linha passada pro findjump %d\n", linenumb);
+                    printf("numero da linha passada pro findjump %d\n", x + 1);
                     findJmp(linebuffer, numbj, linenumb, x + 1); // don't ask me why but it works 
                     
                 } else {
                         
-                    numbj = line[y] - '0';
+                    numbj[0] = line[y];
+                    numbj[1] = '\0';
 
-                    printf("o numero (1 digito) eh: %c\n", line[y]);
-                    printf("numero do numbj %d\n", numbj);
+
+                    printf("numero do numbj %c\n", numbj);
                         
                     replace_number_at(line, buffer, y, x + 1); // it was happen here to 
                     strcpy(linebuffer[x], line);
+                    printf("numero da linha passada pro findjump %d\n", x + 1);
                     findJmp(linebuffer, numbj, linenumb, x + 1); // same here
                 }
 
