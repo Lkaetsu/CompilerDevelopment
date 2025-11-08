@@ -2,4 +2,6 @@
 *.o
 *.txt
 *.json
+*.vscode
 output
+teste _de_funcao.c
