@@ -9,10 +9,10 @@ enum instructions {ildc, ildv, iadd, isub, imult, idivi,
     iinv, iand, ior, ineg, icme, icma, iceq,
     icdif, icmeq, icmaq, ijmp, ijmpf, inum};
     
-    typedef struct token{ //mudar o nome nao coloque token 
+    typedef struct instru{
         char *lexema;
         int tipo;
-    }token;
+    }instru;
     
 int c;
 FILE *file;
@@ -54,7 +54,7 @@ void intToStr(int N, char *str) {
     }
 }
 
-// this one is use to find the jump
+// this one is use to find the jump and change the label number to the line where it had to jump to
 void findJmp(char linebuffer[][buffer], char numbj[], int linenumb, int x){
 
     char line[buffer]; // use to take a line from the linebuffer and look on it for the jump 
@@ -179,7 +179,7 @@ void findJmp(char linebuffer[][buffer], char numbj[], int linenumb, int x){
 
 
 
-void commandPile(token P[], int *i, FILE *file){
+void commandPile(instru P[], int *i, FILE *file){
 
     char line [buffer]; 
     char linebuffer[1000][buffer]; // line vector
@@ -192,7 +192,7 @@ void commandPile(token P[], int *i, FILE *file){
         linenumb++;
     }
     
-    // check for jump commands
+    // check for labels on the four first spaces of the lins
     for(; x < linenumb; x ++){
         strcpy(line, linebuffer[x]);
 
@@ -201,24 +201,34 @@ void commandPile(token P[], int *i, FILE *file){
             if(isdigit((unsigned char)line[y])){
                     
                 if (y + 1 < 4 && isdigit((unsigned char)line[y+1])) {
-                        
+                    
+                    // saving the label number to use it on the findJmp function 
                     numbj[0] = line[y];
                     numbj[1] = line[y+1];
                     numbj[2] = '\0';
-                        
-                    printf("numero do numbj %c%c\n", numbj[0], numbj[1]);
-                    printf("numero da linha passada pro findjump %d\n", x + 1);
+                    
+                    // this FOR remove the label from the string
+                    for (int j = 0; j < 4; j++){
+                        line[j] = ' ';
+                    }
+                    strcpy(linebuffer[x], line);
+
                     findJmp(linebuffer, numbj, linenumb, x + 1); 
                     break;
                     
                 } else {
-                        
+
+                    // saving the label number to use it on the findJmp function 
                     numbj[0] = line[y];
                     numbj[1] = '\0';
 
+                    // this FOR remove the label from the string
+                    for (int j = 0; j < 4; j++){
+                        line[j] = ' ';
+                    }
+                    strcpy(linebuffer[x], line);
 
-                    printf("numero do numbj %c\n", numbj[0]);
-                    printf("numero da linha passada pro findjump %d\n", x + 1);
+
                     findJmp(linebuffer, numbj, linenumb, x + 1);
                     break;
                 }
@@ -227,123 +237,122 @@ void commandPile(token P[], int *i, FILE *file){
     }
     
     // debug prints
-    printf("quantidade de linhas:%d\n", linenumb);
     for(int x = 0; x < linenumb; x++){
-        printf("%s", linebuffer[x]);
+        
     }
     
 }
 
 // taking the things from the vector and executing they
-token getInstruction(token P[], int M[], int *s, int *i){
-    token tk;
-    tk.lexema = (char *) malloc(20 * sizeof(char));
-    //int i = 0;
+// token getInstruction(token P[], int M[], int *s, int *i){
+//     token tk;
+//     tk.lexema = (char *) malloc(20 * sizeof(char));
+//     //int i = 0;
 
-    if(strcmp(tk.lexema, "ildc") == 0){
-        *s = *s + 1; 
-        M[*s] = c;
-    } else if(strcmp(tk.lexema, "ildv") == 0){
-        *s = *s + 1;
-        M[*s] = c;
-    } else if(strcmp(tk.lexema, "iadd") == 0){
-        M[*s - 1] = M[*s - 1] + M[*s];
-        *s = *s - 1;
-    } else if(strcmp(tk.lexema, "isub") == 0){
-        M[*s - 1] = M[*s - 1] - M[*s];
-        *s = *s - 1;
-    } else if(strcmp(tk.lexema, "imult") == 0){
-        M[*s - 1] = M[*s - 1] * M[*s];
-        *s = *s - 1;
-    } else if(strcmp(tk.lexema, "idivi") == 0){
-        M[*s - 1] = M[*s - 1] / M[*s];
-        *s = *s - 1;
-    } else if(strcmp(tk.lexema, "iinv") == 0){
-        M[*s] = -(M[*s]);
-    } else if(strcmp(tk.lexema, "iand") == 0){
-        if(M[*s - 1] == 1 && M[*s] == 1){
-			M[*s - 1] = 1;
-		}
-		else{
-			M[*s - 1] = 0;
-			*s = *s - 1;
-		}
-    } else if(strcmp(tk.lexema, "ior") == 0){
-        if(M[*s - 1] == 1 || M[*s] == 1){
-			M[*s - 1] = 1;
-		}
-		else{
-			M[*s - 1] = 0;
-			*s = *s - 1;
-		}
-    } else if(strcmp(tk.lexema, "ineg") == 0){
-		M[*s] = 1 - M[*s];
-    } else if(strcmp(tk.lexema, "icme") == 0){
-        if(M[*s - 1] < M[*s]){
-            M[*s - 1] = 1;
-        }
-        else {
-            M[*s - 1] = 0;
-            *s = *s - 1;
-        }
-    } else if(strcmp(tk.lexema, "icma") == 0){
-        if(M[*s - 1] > M[*s]){
-            M[*s - 1] = 1;
-        }
-        else{
-            M[*s - 1] = 0;
-            *s = *s - 1;
-        }
-    } else if(strcmp(tk.lexema, "iceq") == 0){
-        if(M[*s - 1] == M[*s]){
-            M[*s - 1] = 1;
-        }
-        else{
-            M[*s - 1] = 0;
-            *s = *s - 1;
-        }
-    } else if(strcmp(tk.lexema, "icdif") == 0){
-        if(M[*s - 1] != M[*s]){
-            M[*s - 1] = 1;
-        }
-        else{
-            M[*s - 1] = 0;
-            *s = *s - 1;
-        }        
-    } else if(strcmp(tk.lexema, "icmeq") == 0){
-        if(M[*s - 1] <= M[*s]){
-            M[*s - 1] = 1;
-        }
-        else{
-            M[*s - 1] = 0;
-            *s = *s - 1;
-        }
-    } else if(strcmp(tk.lexema, "icmaq") == 0){
-        if(M[*s - 1] >= M[*s]){
-            M[*s - 1] = 1;
-        }
-        else{
-            M[*s - 1] = 0;
-            *s = *s - 1;
-        }
-    } 
-    // else if (strcmp(tk.lexema, "ijmp") == 0){
-    //     *s = c; 
-    // } else if (strcmp(tk.lexema, "ijmpf") == 0){
-    //     if ((M[*s] = 0) ){
-    //         *s = c;
-    //     }
-    //     else{
-    //         *s =  + 1;
-    //     }
-    // } else if (strcmp(tk.lexema, "inum") == 0){
+//     if(strcmp(tk.lexema, "ildc") == 0){
+//         *s = *s + 1; 
+//         M[*s] = c;
+//     } else if(strcmp(tk.lexema, "ildv") == 0){
+//         *s = *s + 1;
+//         M[*s] = c;
+//     } else if(strcmp(tk.lexema, "iadd") == 0){
+//         M[*s - 1] = M[*s - 1] + M[*s];
+//         *s = *s - 1;
+//     } else if(strcmp(tk.lexema, "isub") == 0){
+//         M[*s - 1] = M[*s - 1] - M[*s];
+//         *s = *s - 1;
+//     } else if(strcmp(tk.lexema, "imult") == 0){
+//         M[*s - 1] = M[*s - 1] * M[*s];
+//         *s = *s - 1;
+//     } else if(strcmp(tk.lexema, "idivi") == 0){
+//         M[*s - 1] = M[*s - 1] / M[*s];
+//         *s = *s - 1;
+//     } else if(strcmp(tk.lexema, "iinv") == 0){
+//         M[*s] = -(M[*s]);
+//     } else if(strcmp(tk.lexema, "iand") == 0){
+//         if(M[*s - 1] == 1 && M[*s] == 1){
+// 			M[*s - 1] = 1;
+// 		}
+// 		else{
+// 			M[*s - 1] = 0;
+// 			*s = *s - 1;
+// 		}
+//     } else if(strcmp(tk.lexema, "ior") == 0){
+//         if(M[*s - 1] == 1 || M[*s] == 1){
+// 			M[*s - 1] = 1;
+// 		}
+// 		else{
+// 			M[*s - 1] = 0;
+// 			*s = *s - 1;
+// 		}
+//     } else if(strcmp(tk.lexema, "ineg") == 0){
+// 		M[*s] = 1 - M[*s];
+//     } else if(strcmp(tk.lexema, "icme") == 0){
+//         if(M[*s - 1] < M[*s]){
+//             M[*s - 1] = 1;
+//         }
+//         else {
+//             M[*s - 1] = 0;
+//             *s = *s - 1;
+//         }
+//     } else if(strcmp(tk.lexema, "icma") == 0){
+//         if(M[*s - 1] > M[*s]){
+//             M[*s - 1] = 1;
+//         }
+//         else{
+//             M[*s - 1] = 0;
+//             *s = *s - 1;
+//         }
+//     } else if(strcmp(tk.lexema, "iceq") == 0){
+//         if(M[*s - 1] == M[*s]){
+//             M[*s - 1] = 1;
+//         }
+//         else{
+//             M[*s - 1] = 0;
+//             *s = *s - 1;
+//         }
+//     } else if(strcmp(tk.lexema, "icdif") == 0){
+//         if(M[*s - 1] != M[*s]){
+//             M[*s - 1] = 1;
+//         }
+//         else{
+//             M[*s - 1] = 0;
+//             *s = *s - 1;
+//         }        
+//     } else if(strcmp(tk.lexema, "icmeq") == 0){
+//         if(M[*s - 1] <= M[*s]){
+//             M[*s - 1] = 1;
+//         }
+//         else{
+//             M[*s - 1] = 0;
+//             *s = *s - 1;
+//         }
+//     } else if(strcmp(tk.lexema, "icmaq") == 0){
+//         if(M[*s - 1] >= M[*s]){
+//             M[*s - 1] = 1;
+//         }
+//         else{
+//             M[*s - 1] = 0;
+//             *s = *s - 1;
+//         }
+//     } 
+//     // else if (strcmp(tk.lexema, "ijmp") == 0){
+//     //     *s = c; 
+//     // } else if (strcmp(tk.lexema, "ijmpf") == 0){
+//     //     if ((M[*s] = 0) ){
+//     //         *s = c;
+//     //     }
+//     //     else{
+//     //         *s =  + 1;
+//     //     }
+//     // } else if (strcmp(tk.lexema, "inum") == 0){
         
-    // }
+//     // }
 
 
-    c = fgetc(file);
+//     c = fgetc(file);
     
-}
+// }
 
 int main(int argc, char *argv[])
 {
@@ -357,7 +366,7 @@ int main(int argc, char *argv[])
     int i = 0; // registrador do programa
     int s = 0; // registrador da pilha de valores
     char c;
-    token P[1000];
+    instru P[1000];
 
     file = fopen(argv[1], "r");
     if (file == NULL) {
