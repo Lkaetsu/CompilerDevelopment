@@ -5,14 +5,18 @@
 #include <errno.h>
 #define buffer 24
 
-enum instructions {ildc, ildv, iadd, isub, imult, idivi,
-    iinv, iand, ior, ineg, icme, icma, iceq,
-    icdif, icmeq, icmaq, ijmp, ijmpf, inum};
+const char *instructionsVector[28] = {
+    "LDC", "LDV", "ADD", "SUB", "MULT", "DIVI",
+    "INV", "AND", "OR", "NEG", "CME", "CMA", "CEQ", "CDIF", "CMEQ",
+    "CMAQ", "JMP", "JMPF", "NUM", "CALL", "STR", "RD", "PRN", "START",
+    "ALLOC", "DALLOC", "HTL", "RETURN","NULL"
+};
     
-    typedef struct instru{
-        char *lexema;
-        int tipo;
-    }instru;
+// struct for the P stack
+typedef struct instru{
+    char *typ;
+    int arg1 , arg2;
+}instru;
     
 int c;
 FILE *file;
@@ -183,7 +187,9 @@ void commandPile(instru P[], int *i, FILE *file){
 
     char line [buffer]; 
     char linebuffer[1000][buffer]; // line vector
-    int linenumb = 0, x = 1;
+    int  linenumb = 0, x = 1;
+    char *instruFound; //instruction found on the line from the linebuffer 
+    char isntruFvector[8]; // instruction from the instructionvector
     char numbj[3], L;// variable to save the jump number provisionally
 
     // reading and storing the lines on the line vector
@@ -236,9 +242,19 @@ void commandPile(instru P[], int *i, FILE *file){
         }
     }
     
-    // debug prints
+    
     for(int x = 0; x < linenumb; x++){
-        
+        strcpy(line, linebuffer[x]);
+        for (int i = 0; i < 28; i++){
+            strcpy(isntruFvector, instructionsVector[i]);
+            printf("o que estou procurando: %s\n",isntruFvector);
+            instruFound = strstr(line, isntruFvector);
+            printf("linha que eu tenho: %s\n",instruFound);
+            if(instruFound != NULL){
+                printf("achado a instrucao: %s\n", instruFound );
+            }
+
+        }
     }
     
 }
@@ -378,7 +394,7 @@ int main(int argc, char *argv[])
     commandPile(P, &i, file);
 
     while(i != i){
-        getInstruction(P, M, &s, &i);
+        //getInstruction(P, M, &s, &i);
         i = i + 1;
     }
     return 0;
