@@ -56,7 +56,6 @@ int isWhitespace(int c){
 
 token handleError(){
     token tk;
-    tk.lexema = malloc(sizeof(char)*255);
     char aux[255];
     int i = 0;
 
@@ -69,9 +68,10 @@ token handleError(){
     while(!(isWhitespace(c) || c == ':' || c == '+' ||
             c == '-' || c == '*' || c == '!' || c == '<' ||
             c == '>' || c == '=' || c == ',' || c == '(' ||
-            c == ')' || c == '.' || c == EOF)
+            c == ')' || c == '.' || c == EOF) && i < 254
     );
     aux[i] = '\0';
+    tk.lexema = malloc(sizeof(char)*i+1);
     strcpy(tk.lexema, aux);
     tk.simbolo = serro;
     printf("Error in line %d: Unrecognized identifier \'%s\'\n", line, tk.lexema);
@@ -81,7 +81,6 @@ token handleError(){
 
 token handleDigit(){
     token tk;
-    tk.lexema = malloc(sizeof(char)*255);
     char aux[255];
     int i = 0;
 
@@ -90,8 +89,9 @@ token handleDigit(){
         aux[i] = (char) c;
         c = fgetc(file);
         i++;
-    }while(isdigit(c));
+    }while(isdigit(c) && i < 254);
     aux[i] = '\0';
+    tk.lexema = malloc(sizeof(char)*i+1);
     strcpy(tk.lexema, aux);
     tk.simbolo = snumero;
 
@@ -100,7 +100,6 @@ token handleDigit(){
 
 token handleIdOrReserved(){
     token tk;
-    tk.lexema = malloc(sizeof(char)*255);
     char aux[255];
     int i = 0;
 
@@ -109,8 +108,9 @@ token handleIdOrReserved(){
         aux[i] = (char) c;
         c = fgetc(file);
         i++;
-    }while(isalnum(c) || c == '_');
+    }while((isalnum(c) || c == '_') && i < 254);
     aux[i] = '\0';
+    tk.lexema = malloc(sizeof(char)*i+1);
     strcpy(tk.lexema, aux);
     tk.simbolo = sidentificador;
 
@@ -195,13 +195,17 @@ token handleIdOrReserved(){
 
 token handleAttr(){
     token tk;
+    tk.lexema = malloc(sizeof(char)*3);
     c = fgetc(file);
     if (c == (int)'=') {
-        tk.lexema = ":=";
+        tk.lexema[0] = ':';
+        tk.lexema[1] = '=';
+        tk.lexema[2] = '\0';
         tk.simbolo = satribuicao;
         c = fgetc(file);
     } else {
-        tk.lexema = ":";
+        tk.lexema[0] = ':';
+        tk.lexema[1] = '\0';
         tk.simbolo = sdoispontos;
     }
 
@@ -210,19 +214,23 @@ token handleAttr(){
 
 token handleOpAri(){
     token tk;
+    tk.lexema = malloc(sizeof(char)*2);
 
     if (c == (int)'+'){
-        tk.lexema = "+";
+        tk.lexema[0] = '+';
+        tk.lexema[1] = '\0';
         tk.simbolo = smais;
     }
     else if (c == (int)'-')
     {
-        tk.lexema = "-";
+        tk.lexema[0] = '-';
+        tk.lexema[1] = '\0';
         tk.simbolo = smenos;
     }
     else
     {
-        tk.lexema = "*";
+        tk.lexema[0] = '*';
+        tk.lexema[1] = '\0';
         tk.simbolo = smult;
     }
     c = fgetc(file);
@@ -232,13 +240,16 @@ token handleOpAri(){
 
 token handleOpRel(){
     token tk;
+    tk.lexema = malloc(sizeof(char)*3);
 
     if (c == (int)'!'){
         c = fgetc(file);
 
         if (c == (int)'=')
         {
-            tk.lexema = "!=";
+            tk.lexema[0] = '!';
+            tk.lexema[1] = '=';
+            tk.lexema[2] = '\0';
             tk.simbolo = sdif;
             c = fgetc(file);
         }
@@ -254,13 +265,16 @@ token handleOpRel(){
 
         if (c == (int)'=')
         {
-            tk.lexema = "<=";
+            tk.lexema[0] = '<';
+            tk.lexema[1] = '=';
+            tk.lexema[2] = '\0';
             tk.simbolo = smenorig;
             c = fgetc(file);
         }
         else
         {
-            tk.lexema = "<";
+            tk.lexema[0] = '<';
+            tk.lexema[1] = '\0';
             tk.simbolo = smenor;
         }
     }
@@ -270,19 +284,23 @@ token handleOpRel(){
 
         if (c == (int)'=')
         {
-            tk.lexema = ">=";
+            tk.lexema[0] = '>';
+            tk.lexema[1] = '=';
+            tk.lexema[2] = '\0';
             tk.simbolo = smaiorig;
             c = fgetc(file);
         }
         else
         {
-            tk.lexema = ">";
+            tk.lexema[0] = '>';
+            tk.lexema[1] = '\0';
             tk.simbolo = smaior;
         }
     }
     else
     {
-        tk.lexema = "=";
+        tk.lexema[0] = '=';
+        tk.lexema[1] = '\0';
         tk.simbolo = sig;
         c = fgetc(file);
     }
@@ -292,30 +310,36 @@ token handleOpRel(){
 
 token handlePunct(){
     token tk;
+    tk.lexema = malloc(sizeof(char)*2);
 
     if (c == (int)';')
     {
-        tk.lexema = ";";
+        tk.lexema[0] = ';';
+        tk.lexema[1] = '\0';
         tk.simbolo = sponto_virgula;
     }
     else if (c == (int)',')
     {
-        tk.lexema = ",";
+        tk.lexema[0] = ',';
+        tk.lexema[1] = '\0';
         tk.simbolo = svirgula;
     }
     else if (c == (int)'(')
     {
-        tk.lexema = "(";
+        tk.lexema[0] = '(';
+        tk.lexema[1] = '\0';
         tk.simbolo = sabre_parenteses;
     }
     else if (c == (int)')')
     {
-        tk.lexema = ")";
+        tk.lexema[0] = ')';
+        tk.lexema[1] = '\0';
         tk.simbolo = sfecha_parenteses;
     }
     else
     {
-        tk.lexema = ".";
+        tk.lexema[0] = '.';
+        tk.lexema[1] = '\0';
         tk.simbolo = sponto;
     }
 
@@ -326,6 +350,7 @@ token handlePunct(){
 
 token getToken(){
     token tk;
+
     if (isdigit(c))
     {
         tk = handleDigit();
@@ -354,7 +379,6 @@ token getToken(){
     {
         tk = handleError();
     }
-
 
     return tk;
 }

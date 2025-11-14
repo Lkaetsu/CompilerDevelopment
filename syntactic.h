@@ -3,9 +3,10 @@
 
 #include "lexical.h"
 #include "semantic.h"
+#include "codegen.h"
 
 token tk;
-int label;
+int label, availableAddr;
 
 void syntactical();
 void blockAnalysis();
@@ -32,35 +33,39 @@ void funcCallAnalysis();
 
 void funcCallAnalysis(){
     // printf("<chamada de funcao>\n");
-    if (searchDeclProcTable){
+    if (!searchDeclVarFuncTable(tk.lexema)){
         printf("Error in line %d: Function '%s' used, but not declared.", line, tk.lexema);
         exit(-1);
     }
+    free(tk.lexema);
     tk = lexical();
 }
 
-void procCallAnalysis(){
+void procCallAnalysis(char *procName){
+    int aux = searchDeclProcTable(procName);
     // printf("<chamada de procedimento>\n");
-    if (searchDeclProcTable){
-        printf("Error in line %d: Procedure '%s' used, but not declared.", line, tk.lexema);
+    if (aux == -1){
+        printf("Error in line %d: Procedure '%s' used, but not declared.", line, procName);
         exit(-1);
     }
+    codeGen("   ", "JMP    ", symbolsTable.id[aux].address, "   ");
+    free(procName);
 }
 
-void factorAnalysis(Expr expr){
+void factorAnalysis(Expr *expr){
     // printf("<fator> -> ");
     int ind;
     if (tk.simbolo == sidentificador){      // Variable or function
         // printf("%s ", tk.lexema);
         ind = searchTable(tk.lexema);
-        if (ind){
+        if (ind != -1){
             if (symbolsTable.id[ind].type == tfuncaointeiro ||
                 symbolsTable.id[ind].type == tfuncaobooleana)
             {
                 funcCallAnalysis();
             } else {
-                expr.lexema[expr.top] = tk.lexema;
-                expr++;
+                storeExpr(expr, tk.lexema, tk.simbolo);
+                free(tk.lexema);
                 tk = lexical();
             }
         } else {
@@ -70,36 +75,36 @@ void factorAnalysis(Expr expr){
     } else {
         if (tk.simbolo == snumero){         // Number
             // printf("%s ", tk.lexema);
-            expr.lexema[expr.top] = tk.lexema;
-            expr.top++;
+            storeExpr(expr, tk.lexema, tk.simbolo);
+            free(tk.lexema);
             tk = lexical();
 
         } else if (tk.simbolo == snao){
             // printf("%s ", tk.lexema);
-            expr.lexema[expr.top] = tk.lexema;
-            expr.top++;
+            storeExpr(expr, tk.lexema, tk.simbolo);
+            free(tk.lexema);
             tk = lexical();
             factorAnalysis(expr);
         } else if (tk.simbolo == sabre_parenteses){
             // printf("%s ", tk.lexema);
-            expr.lexema[expr.top] = tk.lexema;
-            expr.top++;
+            storeExpr(expr, tk.lexema, tk.simbolo);
+            free(tk.lexema);
             tk = lexical();
             expressionAnalysis(expr);
 
             if (tk.simbolo == sfecha_parenteses){
                 // printf("%s ", tk.lexema);
-                expr.lexema[expr.top] = tk.lexema;
-                expr.top++;
+                storeExpr(expr, tk.lexema, tk.simbolo);
+                free(tk.lexema);
                 tk = lexical();
             } else {
-                printf("Error in line %d: Unclosed '(' in expression.");
+                printf("Error in line %d: Unclosed '(' in expression.", line);
                 exit(-1);
             }
         } else if (tk.simbolo == sverdadeiro || tk.simbolo == sfalso){
             // printf("%s ", tk.lexema);
-            expr.lexema[expr.top] = tk.lexema;
-            expr.top++;
+            storeExpr(expr, tk.lexema, tk.simbolo);
+            free(tk.lexema);
             tk = lexical();
         } else {
             printf("Error in line %d: Unexpected token '%s' in place of an expression.", line, tk.lexema);
@@ -108,26 +113,26 @@ void factorAnalysis(Expr expr){
     }
 }
 
-void termAnalysis(Expr expr){
+void termAnalysis(Expr *expr){
     // printf("<termo> -> ");
     factorAnalysis(expr);
     while(tk.simbolo == smult || tk.simbolo == sdiv ||
           tk.simbolo == se)
     {
         // printf("%s ", tk.lexema);
-        expr.lexema[expr.top] = tk.lexema;
-        expr.top++;
+        storeExpr(expr, tk.lexema, tk.simbolo);
+        free(tk.lexema);
         tk = lexical();
-        factorAnalysis();
+        factorAnalysis(expr);
     }
 }
 
-void simpleExpressionAnalysis(Expr expr){
+void simpleExpressionAnalysis(Expr *expr){
     // printf("<expressao simples> -> ");
     if (tk.simbolo == smais || tk.simbolo == smenos){
         // printf("%s ", tk.lexema);
-        expr.lexema[expr.top] = tk.simbolo == smais ? "u+" : "u-";
-        expr.top++;
+        storeExpr(expr, tk.lexema, tk.simbolo);
+        free(tk.lexema);
         tk = lexical();
     }
     termAnalysis(expr);
@@ -135,15 +140,14 @@ void simpleExpressionAnalysis(Expr expr){
           tk.simbolo == sou)
     {
         // printf("%s ", tk.lexema);
-        expr.lexema[expr.top] = tk.lexema;
-        expr.top++;
+        storeExpr(expr, tk.lexema, tk.simbolo);
+        free(tk.lexema);
         tk = lexical();
         termAnalysis(expr);
     }
 }
 
-void expressionAnalysis(Expr expr){
-    /// TODO: guardar todos os tokens de uma expressão para transformá-la em pósfixa
+void expressionAnalysis(Expr *expr){
     // printf("<expressao> -> ");
     simpleExpressionAnalysis(expr);
     if (tk.simbolo == smaior || tk.simbolo == smaiorig ||
@@ -151,23 +155,30 @@ void expressionAnalysis(Expr expr){
         tk.simbolo == sdif)
     {
         // printf("%s ", tk.lexema);
-        expr.lexema[expr.top] = tk.lexema;
-        expr.top++;
+        storeExpr(expr, tk.lexema, tk.simbolo);
+        free(tk.lexema);
         tk = lexical();
-        simpleExpressionAnalysis(expr)
+        simpleExpressionAnalysis(expr);
     }
 }
 
 void funcDeclAnalysis(){
-    // printf("<declaracao de funcao> -> funcao ");
+    //printf("<declaracao de funcao> -> funcao ");
+    free(tk.lexema);
     tk = lexical();
     int scopeFlag = 1;       // Marks the start of the function for searches
+    char buffer[4];
     if (tk.simbolo = sidentificador){
-        // printf("%s", tk.lexema);
-        if (!searchDeclProcTable(tk.lexema)){
-            insertTable(tk.lexema, tprocedimento, scopeFlag, ""/* label*/);
+        //printf("%s", tk.lexema);
+        if (!searchDeclVarFuncTable(tk.lexema)){
+            sprintf(buffer, "L%d", label);
+            insertTable(tk.lexema, tprocedimento, scopeFlag, buffer);
+            codeGen(buffer, "NULL   ", "   ", "   ");
+            label++;
+            free(tk.lexema);
             tk = lexical();
             if (tk.simbolo == sdoispontos) {
+                free(tk.lexema);
                 tk = lexical();
 
                 if (tk.simbolo == sinteiro || tk.simbolo == sbooleano){
@@ -176,6 +187,7 @@ void funcDeclAnalysis(){
                     } else {
                         symbolsTable.id[symbolsTable.top].type = tfuncaobooleana;
                     }
+                    free(tk.lexema);
                     tk = lexical();
                     if (tk.simbolo == sponto_virgula){
                         blockAnalysis();
@@ -201,14 +213,19 @@ void funcDeclAnalysis(){
 
 void procDeclAnalysis(){
     // printf("<declaracao de procedimento> -> procedimento ");
+    free(tk.lexema);
     tk = lexical();
     int scopeFlag = 1;       // Marks the start of the procedure for searches
+    char buffer[4];
+    int aux = searchDeclProcTable(tk.lexema);
     if (tk.simbolo = sidentificador){
         // printf("%s", tk.lexema);
-        if (!searchDeclProcTable(tk.lexema)){
-            insertTable(tk.lexema, tprocedimento, scopeFlag, label);
-//            codeGen(label, NULL, ´´, ´´);       // Call will get this label from the symbolsTable
+        if (aux == -1){
+            sprintf(buffer, "L%d", label);
+            insertTable(tk.lexema, tprocedimento, scopeFlag, buffer);
+            codeGen(buffer, "NULL   ", "   ", "   ");       // Call will get this label from the symbolsTable
             label++;
+            free(tk.lexema);
             tk = lexical();
             if (tk.simbolo == sponto_virgula){
                 // printf(";\n");
@@ -229,44 +246,53 @@ void procDeclAnalysis(){
 }
 
 void subroutineAnalysis(){
-//    int auxrot, flag = 0;
+    int auxrot, flag = 0;
+    char buffer[4];
     if (tk.simbolo == sprocedimento || tk.simbolo == sfuncao){
         // printf("<etapa de declaracao de sub-rotinas> -> ");
-//        auxrot = label;
-//        codeGen(´´, JMP, label, ´´);      // Jump subroutines
-//        label++;
-//        flag = 1;
+        auxrot = label;
+        sprintf(buffer, "L%d", label);
+        codeGen("   ", "JMP    ", buffer, "   ");      // Jump subroutines
+        label++;
+        flag = 1;
     }
     while (tk.simbolo == sprocedimento || tk.simbolo == sfuncao){
         if (tk.simbolo == sprocedimento){
             procDeclAnalysis();
         } else {
-            funcDeclAnalysis();
+            funcDeclAnalysis(auxrot);
         }
         if (tk.simbolo == sponto_virgula){
+            free(tk.lexema);
             tk = lexical();
         } else {
             printf("Error in line %d: Subroutine declarations must be ended by ';'.\n", line);
             exit(-1);
         }
     }
-//    if (flag == 1) {
-//        codeGen(auxrot, NULL, ´´, ´´);      // Beginning of main
-//    }
+    if (flag == 1) {
+        sprintf(buffer, "L%d", auxrot);
+        codeGen(buffer, "NULL   ", "   ", "   ");      // Beginning of main
+    }
 }
 
 void ifAnalysis(){
     // printf("<comando condicional> -> se ");
+    free(tk.lexema);
     tk = lexical();
     Expr expression;
-    expressionAnalysis(expression);
-    posfixConvertion(expression);
+    expression.top = 0;
+    expressionAnalysis(&expression);
+    codeGenExpr(expression);
     if (tk.simbolo == sentao){
         // printf("entao \n");
+        free(tk.lexema);
         tk = lexical();
+        // printf("%s", tk.lexema);
         simpleCommandAnalysis();
         if (tk.simbolo == ssenao){
             // printf("senao \n");
+            free(tk.lexema);
             tk = lexical();
             simpleCommandAnalysis();
         }
@@ -277,24 +303,32 @@ void ifAnalysis(){
 }
 
 void whileAnalysis(){
+    char buffer[4];
 //    int auxrot1, auxrot2;
 //    auxrot1 = label;
-//    codeGen(label, NULL, ´´, ´´);
+//    sprintf(buffer, "L%d", label);
+//    codeGen(buffer, NULL, "   ", "   ");
 //    label++;
     // printf("<comando enquanto> -> enquanto \n");
+    free(tk.lexema);
     tk = lexical();
     Expr expression;
-    expressionAnalysis(expression);
-    posfixConvertion(expression);
+    expression.top = 0;
+    expressionAnalysis(&expression);
+    codeGenExpr(expression);
     if (tk.simbolo == sfaca){
         // printf("faca \n");
 //        auxrot2 = label;
-//        codeGen(´´, JMPF, label, ´´);   // Jump if false
+//        sprintf(buffer, "L%d", label);
+//        codeGen("   ", JMPF, buffer, "   ");   // Jump if false
 //        label++;
+        free(tk.lexema);
         tk = lexical();
         simpleCommandAnalysis();
-//        codeGen(´´, JMP, auxrot1, ´´);  // Return to start of the loop
-//        codeGen(auxrot2, NULL, ´´, ´´); // End of the while loop
+//        sprintf(buffer, "L%d", auxrot1);
+//        codeGen("   ", JMP, buffer, "   ");  // Return to start of the loop
+//        sprintf(buffer, "L%d", auxrot2);
+//        codeGen(buffer, NULL, "   ", "   "); // End of the while loop
     } else {
         printf("Error in line %d: There must be a 'faca' after 'enquanto(<condition>)'. Example: enquanto(verdadeiro) faca ...\n", line);
         exit(-1);
@@ -303,16 +337,20 @@ void whileAnalysis(){
 
 void writeAnalysis(){
     // printf("<comando escrita> -> escreva");
+    free(tk.lexema);
     tk = lexical();
     if (tk.simbolo == sabre_parenteses){
         // printf("(");
+        free(tk.lexema);
         tk = lexical();
         if (tk.simbolo == sidentificador){
             // printf("%s", tk.lexema);
             if (searchDeclVarFuncTable(tk.lexema)){
+                free(tk.lexema);
                 tk = lexical();
                 if (tk.simbolo == sfecha_parenteses){
                     // printf(")");
+                    free(tk.lexema);
                     tk = lexical();
                 } else {
                     printf("Error in line %d: Unexpected token '%s' before ')'. Example: escreva(x);\n", line, tk.lexema);
@@ -334,16 +372,20 @@ void writeAnalysis(){
 
 void readAnalysis(){
     // printf("<comando leitura> -> leia");
+    free(tk.lexema);
     tk = lexical();
     if (tk.simbolo == sabre_parenteses){
         // printf("(");
+        free(tk.lexema);
         tk = lexical();
         if (tk.simbolo == sidentificador){
             // printf("%s", tk.lexema);
             if (searchDeclVarTable(tk.lexema)){
+                free(tk.lexema);
                 tk = lexical();
                 if (tk.simbolo == sfecha_parenteses){
                     // printf(")");
+                    free(tk.lexema);
                     tk = lexical();
                 } else {
                     printf("Error in line %d: Unexpected token '%s' before ')'. Example: leia(x);\n", line, tk.lexema);
@@ -364,22 +406,27 @@ void readAnalysis(){
 }
 
 void attribAnalysis(){
+    free(tk.lexema);
     tk = lexical();
     Expr expression;
-    expressionAnalysis(expression);
-    posfixConvertion(expression);
+    expression.top = 0;
+    expressionAnalysis(&expression);
+    codeGenExpr(expression);
 }
 
 void attribProcCallAnalysis(){
     // printf("<atribuicao_chprocedimento> -> ");
-    // char *deriv_aux = tk.lexema;
+    char *auxName;
+    auxName = malloc(sizeof(char) * (strlen(tk.lexema)+1));
+    strcpy(auxName, tk.lexema);
+    free(tk.lexema);
     tk = lexical();
     if (tk.simbolo == satribuicao){
         // printf("<comando atribuicao> -> %s := ", deriv_aux);
         attribAnalysis();
     } else {
         // printf("<chamada de procedimento> -> %s", deriv_aux);
-        procCallAnalysis();
+        procCallAnalysis(auxName);
     }
 }
 
@@ -407,14 +454,16 @@ void simpleCommandAnalysis(){
 }
 
 void commandAnalysis(){
-    // printf("<comandos> -> ");
+//    printf("<comandos> -> ");
     if (tk.simbolo == sinicio){
-        // printf("inicio\n");
+//        printf("inicio\n");
+        free(tk.lexema);
         tk = lexical();
         simpleCommandAnalysis();
         while(tk.simbolo != sfim){
             if (tk.simbolo == sponto_virgula){
-                // printf(";\n");
+//                printf(";\n");
+                free(tk.lexema);
                 tk = lexical();
                 if (tk.simbolo != sfim){
                     simpleCommandAnalysis();
@@ -429,7 +478,7 @@ void commandAnalysis(){
         printf("Error in line %d: The code's commands must be started by 'inicio' and be ended with 'fim'.\n", line);
         exit(-1);
     }
-    // printf("fim\n");
+//    printf("fim\n");
 }
 
 void typeAnalysis(){
@@ -442,21 +491,29 @@ void typeAnalysis(){
         // printf("%s", tk.lexema);
         placeTypeTable(tk.simbolo);
     }
+    free(tk.lexema);
     tk = lexical();
 }
 
 void variableAnalysis(){
+    int cont = 0, aux = availableAddr;
+    char buffer[4], buffer2[4];
     // printf("<declaracao de variaveis> -> ");
     while(tk.simbolo != sdoispontos){
         if (tk.simbolo == sidentificador){
+            cont++;
             // printf("%s", tk.lexema);
-            if (!searchDuplicVarTable(tk.lexema)){
-                insertTable(tk.lexema, tvariavel, "", "");
+            if (!searchDuplVarTable(tk.lexema)){
+                sprintf(buffer, "%d", availableAddr);
+                insertTable(tk.lexema, tvariavel, 0, buffer);
+                availableAddr++;
+                free(tk.lexema);
                 tk = lexical();
 
                 if (tk.simbolo == svirgula || tk.simbolo == sdoispontos){
                     if (tk.simbolo == svirgula){
                         // printf(", ");
+                        free(tk.lexema);
                         tk = lexical();
 
                         if (tk.simbolo == sdoispontos){
@@ -477,7 +534,11 @@ void variableAnalysis(){
             exit(-1);
         }
     }
+    sprintf(buffer, "%d", aux);
+    sprintf(buffer2, ",%d", cont);
+    codeGen("   ", "ALLOC  ", buffer, buffer2);
     // printf(": ");
+    free(tk.lexema);
     tk = lexical();
     typeAnalysis();
 }
@@ -486,6 +547,7 @@ void variableStageAnalysis(){
     if (tk.simbolo == svar){
         // printf("<etapa de declaracao de variaveis> -> ");
         // printf("var ", tk.lexema);
+        free(tk.lexema);
         tk = lexical();
 
         if (tk.simbolo == sidentificador){
@@ -493,6 +555,7 @@ void variableStageAnalysis(){
                 variableAnalysis();
                 if (tk.simbolo == sponto_virgula){
                     // printf(";\n");
+                    free(tk.lexema);
                     tk = lexical();
                 } else {
                     printf("Error in line %d: Variable declaration should end with ';'. Example: var x:inteiro;\n", line);
@@ -507,7 +570,8 @@ void variableStageAnalysis(){
 }
 
 void blockAnalysis() {
-    // printf("<bloco> -> ");
+//    printf("<bloco> -> ");
+    free(tk.lexema);
     tk = lexical();
     variableStageAnalysis();
     subroutineAnalysis();
@@ -515,27 +579,33 @@ void blockAnalysis() {
 }
 
 void syntactical() {
-    // printf("<programa> -> ");
+//    printf("<programa> -> ");
     label = 1;
+    availableAddr = 1;
     tk = lexical();
 
     if (tk.simbolo == sprograma){
+        free(tk.lexema);
         tk = lexical();
 
         if (tk.simbolo == sidentificador){
-            // printf("programa %s", tk.lexema);
-            insertTable(tk.lexema, tnomedeprograma, "", "");
+//            printf("programa %s", tk.lexema);
+            setupSymbolsTable();
+            insertTable(tk.lexema, tnomedeprograma, 0, "");
+            codeGen("   ", "START  ", "   ", "   ");
+            free(tk.lexema);
             tk = lexical();
 
             if (tk.simbolo == sponto_virgula){
-                // printf(";\n");
+//                printf(";\n");
                 blockAnalysis();
 
                 if (tk.simbolo == sponto){
                     // printf(".\n");
+                    free(tk.lexema);
                     lexical();
                     if (c == EOF || c == '{'){
-                        printf("Syntax Success");
+                        codeGen("   ", "HLT    ", "   ", "   ");
                     } else {
                         printf("Error in line %d: Code outside of the program scope.\n", line);
                         exit(-1);
