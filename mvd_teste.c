@@ -5,7 +5,7 @@
 #include <errno.h>
 #define buffer 24
 
-const char *instructionsVector[28] = {
+const char *instructionsVector[] = {
     "LDC", "LDV", "ADD", "SUB", "MULT", "DIVI",
     "INV", "AND", "OR", "NEG", "CME", "CMA", "CEQ", "CDIF", "CMEQ",
     "CMAQ", "JMP", "JMPF", "NUM", "CALL", "STR", "RD", "PRN", "START",
@@ -14,7 +14,7 @@ const char *instructionsVector[28] = {
     
 // struct for the P stack
 typedef struct instru{
-    char *typ;
+    char *type;
     int arg1 , arg2;
 }instru;
     
@@ -242,7 +242,7 @@ void commandPile(instru P[], int *i, FILE *file){
         }
     }
     
-    
+    // populating the P stack
     for(int x = 0; x < linenumb; x++){
         strcpy(line, linebuffer[x]);
         for (int i = 0; i < 28; i++){
@@ -252,6 +252,12 @@ void commandPile(instru P[], int *i, FILE *file){
             printf("linha que eu tenho: %s\n",instruFound);
             if(instruFound != NULL){
                 printf("achado a instrucao: %s\n", instruFound );
+                P[x].type = isntruFvector;
+                if (isntruFvector == "ALLOC"){
+                    printf("ola");
+                }else if(isntruFvector == "JMP"){
+                    printf("oi");
+                }
             }
 
         }
