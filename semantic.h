@@ -25,8 +25,11 @@ typedef struct expr {
 } Expr;
 
 Stack symbolsTable;
+int label, availableAddr;
 
 void setupSymbolsTable(){
+    label = 1;
+    availableAddr = 1;
     symbolsTable.top = 0;
 }
 
@@ -61,8 +64,13 @@ void storeExpr(Expr *e, char *lexema, int type){
     e->top++;
 }
 
+void popExpr(Expr *e){
+    free(e->lexema[e->top - 1]);
+    e->top--;
+}
+
 /// Conversão para posfixa
-Expr posfixConvertion(Expr *expr){
+Expr posfixConversion(Expr *expr){
     Expr posfix, auxStack;
     posfix.top = 0;
     auxStack.top = 0;
@@ -72,23 +80,17 @@ Expr posfixConvertion(Expr *expr){
     for (int i = 0; i < expr->top; i++){
         if (expr->type[i] == snumero || expr->type[i] == sverdadeiro || expr->type[i] == sfalso || expr->type[i] == sidentificador){
             // Se for variável ou número copia na saída
-            posfix.lexema[posfix.top] = expr->lexema[i];
-            posfix.type[posfix.top] = expr->type[i];
-            posfix.top++;
+            storeExpr(&posfix, expr->lexema[i], expr->type[i]);
         } else if (expr->type[i] == sabre_parenteses) {
             // Se for abre-parênteses empilha
-            auxStack.lexema[auxStack.top] = expr->lexema[i];
-            auxStack.type[auxStack.top] = expr->type[i];
-            auxStack.top++;
+            storeExpr(&auxStack, expr->lexema[i], expr->type[i]);
         } else if (expr->type[i] == sfecha_parenteses){
             // Se for fecha-parênteses, desempilha tudo copiando na saída até o primeiro abre-parênteses (desempilhando-o)
             for(int j = auxStack.top - 1; j > -1 || auxStack.type[j] != sabre_parenteses; j--){
-                posfix.lexema[posfix.top] = auxStack.lexema[j];
-                posfix.type[posfix.top] = auxStack.type[j];
-                posfix.top++;
-                auxStack.top--;
+                storeExpr(&posfix, auxStack.lexema[j], auxStack.type[j]);
+                popExpr(&auxStack);
             }
-            auxStack.top--;
+            popExpr(&auxStack);
         } else if (checkArrayForType(expr->type[i], precedences, N)){
             // Se for operador, empilha após percorrer desempilhando e copiando na saída todos os operadores
             // com precedência maior ou igual ao que será empilhado, isso até encontrar o primeiro
@@ -124,21 +126,19 @@ Expr posfixConvertion(Expr *expr){
                 if (auxStack.type[j] == sabre_parenteses || checkArrayForType(auxStack.type[j], &precedences[prec_i], N - prec_i)){
                     break;
                 }
-                posfix.lexema[posfix.top] = auxStack.lexema[j];
-                posfix.type[posfix.top] = auxStack.type[j];
-                posfix.top++;
-                auxStack.top--;
+                storeExpr(&posfix, auxStack.lexema[j], auxStack.type[j]);
+                popExpr(&auxStack);
             }
-            auxStack.lexema[auxStack.top] = expr->lexema[i];
-            auxStack.type[auxStack.top] = expr->type[i];
-            auxStack.top++;
+            storeExpr(&auxStack, expr->lexema[i], expr->type[i]);
         }
     }
     // Se terminar a expressão, desempilhar copiando na saída todos os operadores ainda existentes na pilha
     for(int i = auxStack.top - 1; i > -1; i--){
-        posfix.lexema[posfix.top] = auxStack.lexema[i];
-        posfix.type[posfix.top] = auxStack.type[i];
-        posfix.top++;
+        storeExpr(&posfix, auxStack.lexema[i], auxStack.type[i]);
+        popExpr(&auxStack);
+    }
+    while(expr->top > 0){
+        popExpr(expr);
     }
     *expr = posfix;
 }
@@ -162,11 +162,11 @@ int searchDeclVarTable(char *lexema)
     for(i = symbolsTable.top - 1; i > -1; i--){
         if (symbolsTable.id[i].type == tinteiro || symbolsTable.id[i].type == tbooleano){
             if(strcmp(symbolsTable.id[i].lexema, lexema) == 0){
-                return 1;
+                return i;
             }
         }
     }
-    return 0;
+    return -1;
 }
 
 /// Search until the start of the stack
@@ -175,10 +175,8 @@ int searchDeclProcTable(char* lexema)
     int i;
     for(i = symbolsTable.top - 1; i > -1; i--){
         // printf("%d: %s, %d, %d, %s\n", i, symbolsTable.id[i].lexema, symbolsTable.id[i].type, symbolsTable.id[i].scope, symbolsTable.id[i].address);
-        if (symbolsTable.id[i].type == tprocedimento){
-            if(strcmp(symbolsTable.id[i].lexema, lexema) == 0){
-                return i;
-            }
+        if(strcmp(symbolsTable.id[i].lexema, lexema) == 0){
+            return i;
         }
     }
     return -1;
@@ -189,13 +187,14 @@ int searchDeclVarFuncTable(char *lexema)
 {
     int i;
     for(i = symbolsTable.top - 1; i > -1; i--){
+        // printf("%d: %s, %d, %d, %s\n", i, symbolsTable.id[i].lexema, symbolsTable.id[i].type, symbolsTable.id[i].scope, symbolsTable.id[i].address);
         if (symbolsTable.id[i].type == tinteiro || symbolsTable.id[i].type == tbooleano || symbolsTable.id[i].type == tfuncaointeiro || symbolsTable.id[i].type == tfuncaobooleana){
             if(strcmp(symbolsTable.id[i].lexema, lexema) == 0){
-                return 1;
+                return i;
             }
         }
     }
-    return 0;
+    return -1;
 }
 
 /// Search until the start of the stack
@@ -224,16 +223,6 @@ void placeTypeTable(int type){
             }
         }
     }
-}
-
-void unstackLevel(){
-    int i;
-    for(i = symbolsTable.top - 1; i > -1 && symbolsTable.id[i].scope == 0; i--){
-        free(symbolsTable.id[symbolsTable.top].lexema);
-        free(symbolsTable.id[symbolsTable.top].address);
-    }
-    symbolsTable.top = i + 1;
-    symbolsTable.id[i].scope = 0;
 }
 
 #endif

@@ -56,7 +56,7 @@ int isWhitespace(int c){
 
 token handleError(){
     token tk;
-    char aux[255];
+    char aux[31];
     int i = 0;
 
     do
@@ -68,7 +68,7 @@ token handleError(){
     while(!(isWhitespace(c) || c == ':' || c == '+' ||
             c == '-' || c == '*' || c == '!' || c == '<' ||
             c == '>' || c == '=' || c == ',' || c == '(' ||
-            c == ')' || c == '.' || c == EOF) && i < 254
+            c == ')' || c == '.' || c == EOF) && i < 30
     );
     aux[i] = '\0';
     tk.lexema = malloc(sizeof(char)*i+1);
@@ -81,7 +81,7 @@ token handleError(){
 
 token handleDigit(){
     token tk;
-    char aux[255];
+    char aux[31];
     int i = 0;
 
     do
@@ -89,7 +89,7 @@ token handleDigit(){
         aux[i] = (char) c;
         c = fgetc(file);
         i++;
-    }while(isdigit(c) && i < 254);
+    }while(isdigit(c) && i < 30);
     aux[i] = '\0';
     tk.lexema = malloc(sizeof(char)*i+1);
     strcpy(tk.lexema, aux);
@@ -100,7 +100,7 @@ token handleDigit(){
 
 token handleIdOrReserved(){
     token tk;
-    char aux[255];
+    char aux[31];
     int i = 0;
 
     do
@@ -108,9 +108,9 @@ token handleIdOrReserved(){
         aux[i] = (char) c;
         c = fgetc(file);
         i++;
-    }while((isalnum(c) || c == '_') && i < 254);
+    }while((isalnum(c) || c == '_') && i < 30);
     aux[i] = '\0';
-    tk.lexema = malloc(sizeof(char)*i+1);
+    tk.lexema = malloc(sizeof(char)*(i+1));
     strcpy(tk.lexema, aux);
     tk.simbolo = sidentificador;
 
