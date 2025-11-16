@@ -35,7 +35,7 @@ void funcCallAnalysis(Expr *expr, char *address){
     sprintf(addr, "%s", address);
     // printf("<chamada de funcao>\n");
     storeExpr(expr, tk.lexema, tk.simbolo);
-    codeGen("   ", "JMP    ", addr, "   ");
+    codeGen("   ", "CALL   ", addr, "   ");
     free(tk.lexema);
     tk = lexical();
 }
@@ -53,7 +53,7 @@ void procCallAnalysis(char *procName){
 //        printf("Error in line %d: Procedure '%s' used, but not declared.", line, procName);
 //        exit(-1);
 //    }
-    codeGen("   ", "JMP    ", symbolsTable.id[aux].address, "   ");
+    codeGen("   ", "CALL   ", symbolsTable.id[aux].address, "   ");
 }
 
 void factorAnalysis(Expr *expr){
@@ -214,6 +214,7 @@ void funcDeclAnalysis(){
         exit(-1);
     }
     unstackLevel();
+    codeGen("   ", "RETURN", "   ", "   ");
 }
 
 void procDeclAnalysis(){
@@ -248,6 +249,7 @@ void procDeclAnalysis(){
         exit(-1);
     }
     unstackLevel();
+    codeGen("   ", "RETURN", "   ", "   ");
 }
 
 void subroutineAnalysis(){
