@@ -45,12 +45,14 @@ void codeGenExpr(Expr posfix, int resultType){
             case sidentificador:
                 id = symbolsTable.id[searchTable(posfix.lexema[i])];
                 if(id.type == tfuncaointeiro || id.type == tfuncaobooleana){
+                    codeGen("   ", "CALL   ", id.address, "   ");
                     sprintf(addr, "%s", "0");
                     auxStack.type[auxStack.top] = tinteiro ? id.type == tfuncaointeiro : tbooleano;
-                    codeGen("   ", "LDV    ", addr, "   ");
                 } else {
+                    sprintf(addr, "%s", id.address);
                     auxStack.type[auxStack.top] = id.type;
                 }
+                codeGen("   ", "LDV    ", addr, "   ");
                 auxStack.top++;
                 break;
             case smais:
@@ -205,7 +207,7 @@ void unstackLevel(){
     symbolsTable.id[i].scope = 0;
 
     if(aux > 0){
-        sprintf(addr, "%d", availableAddr - 1);
+        sprintf(addr, "%d", availableAddr - aux);
         sprintf(cont, ",%d", aux);
         availableAddr -= aux;
         codeGen("   ", "DALLOC ", addr, cont);

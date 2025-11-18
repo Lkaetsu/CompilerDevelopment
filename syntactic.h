@@ -35,7 +35,6 @@ void funcCallAnalysis(Expr *expr, char *address){
     sprintf(addr, "%s", address);
     // printf("<chamada de funcao>\n");
     storeExpr(expr, tk.lexema, tk.simbolo);
-    codeGen("   ", "CALL   ", addr, "   ");
     free(tk.lexema);
     tk = lexical();
 }
@@ -214,7 +213,7 @@ void funcDeclAnalysis(){
         exit(-1);
     }
     unstackLevel();
-    codeGen("   ", "RETURN", "   ", "   ");
+    codeGen("   ", "RETURN ", "   ", "   ");
 }
 
 void procDeclAnalysis(){
@@ -249,7 +248,7 @@ void procDeclAnalysis(){
         exit(-1);
     }
     unstackLevel();
-    codeGen("   ", "RETURN", "   ", "   ");
+    codeGen("   ", "RETURN ", "   ", "   ");
 }
 
 void subroutineAnalysis(){
