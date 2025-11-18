@@ -20,6 +20,7 @@ typedef struct instru{
 }instru;
     
 int c;
+int linenumb = 0;
 FILE *file;
 
 void intToStr(int N, char *str) {
@@ -188,7 +189,7 @@ void commandPile(instru P[], int *i, FILE *file){
 
     char line [buffer]; 
     char linebuffer[1000][buffer]; // line vector
-    int  linenumb = 0, x = 1;
+    int  x = 1;
     char *instruFound; //instruction found on the line from the linebuffer 
     char isntruFvector[8]; // instruction from the instructionvector
     char numbj[3], L;// variable to save the jump number provisionally
@@ -255,9 +256,9 @@ void commandPile(instru P[], int *i, FILE *file){
             strcpy(isntruFvector, instructionsVector[i]);
             instruFound = strstr(line, isntruFvector);
             if(instruFound != NULL){
-               strcpy (P[x].type , isntruFvector);
+                strcpy (P[x].type , isntruFvector);
                 if (strstr(isntruFvector, "ALLOC")){
-                   for(int j = 0; j < strlen(line); j++){
+                    for(int j = 0; j < strlen(line); j++){
                         if (isdigit((unsigned char)line[j])){
                             P[x].arg1 = line[j] - '0';
                             j++;
@@ -270,7 +271,8 @@ void commandPile(instru P[], int *i, FILE *file){
                             }
                             break;
                         }
-                   }
+                    }
+                    break;
                 }else if(strstr(isntruFvector, "JMPF" )){
                     for(int j = 0; j < strlen(line); j++){
                         if (isdigit((unsigned char)line[j])){
@@ -297,8 +299,8 @@ void commandPile(instru P[], int *i, FILE *file){
                             }
                             break;
                         }
-                   }
-                   break;
+                    }
+                    break;
                 }else if(strstr(isntruFvector, "CALL" )){
                     for(int j = 0; j < strlen(line); j++){
                         if (isdigit((unsigned char)line[j])){
@@ -311,16 +313,16 @@ void commandPile(instru P[], int *i, FILE *file){
                             }
                             break;
                         }
-                   }
+                    }
                    break;
                 }else if(strstr(instruFound,"LDV")){
                     for(int j = 0; j < strlen(line); j++){
                         if (isdigit((unsigned char)line[j])){
                             P[x].arg1 = line[j] - '0';
-
+                            printf("ARG1: %d\n", P[x].arg1);
                             break;
                         }
-                   }
+                    }
                     break;
                 }else if(strstr(instruFound,"LDC")){
                     for(int j = 0; j < strlen(line); j++){
@@ -334,8 +336,8 @@ void commandPile(instru P[], int *i, FILE *file){
                             }
                             break;
                         }
-                   }
-                   break;
+                    }
+                    break;
                 }
             }
         }
@@ -343,137 +345,141 @@ void commandPile(instru P[], int *i, FILE *file){
 }
 
 // taking the things from the vector and executing they
-// token getInstruction(token P[], int M[], int *s, int *i){
-//     token tk;
-//     tk.lexema = (char *) malloc(20 * sizeof(char));
-//     //int i = 0;
+instru executionFunction(instru P[], int M[], int *s, int *i){
+    printf("Executing P[%d]: %s %d %d\n", *i, P[*i].type, P[*i].arg1, P[*i].arg2);
+    printf("Stack top (s=%d): \n", *s);
+    for (int j = 0; j <= *s; j++) {
+        printf("%d \n", M[j]);
+    }
+    printf("\n");
 
-//     if(strcmp(tk.lexema, "ildc") == 0){
-//         *s = *s + 1; 
-//         M[*s] = c;
-//     } else if(strcmp(tk.lexema, "ildv") == 0){
-//         *s = *s + 1;
-//         M[*s] = c;
-//     } else if(strcmp(tk.lexema, "iadd") == 0){
-//         M[*s - 1] = M[*s - 1] + M[*s];
-//         *s = *s - 1;
-//     } else if(strcmp(tk.lexema, "isub") == 0){
-//         M[*s - 1] = M[*s - 1] - M[*s];
-//         *s = *s - 1;
-//     } else if(strcmp(tk.lexema, "imult") == 0){
-//         M[*s - 1] = M[*s - 1] * M[*s];
-//         *s = *s - 1;
-//     } else if(strcmp(tk.lexema, "idivi") == 0){
-//         M[*s - 1] = M[*s - 1] / M[*s];
-//         *s = *s - 1;
-//     } else if(strcmp(tk.lexema, "iinv") == 0){
-//         M[*s] = -(M[*s]);
-//     } else if(strcmp(tk.lexema, "iand") == 0){
-//         if(M[*s - 1] == 1 && M[*s] == 1){
-// 			M[*s - 1] = 1;
-// 		}
-// 		else{
-// 			M[*s - 1] = 0;
-// 			*s = *s - 1;
-// 		}
-//     } else if(strcmp(tk.lexema, "ior") == 0){
-//         if(M[*s - 1] == 1 || M[*s] == 1){
-// 			M[*s - 1] = 1;
-// 		}
-// 		else{
-// 			M[*s - 1] = 0;
-// 			*s = *s - 1;
-// 		}
-//     } else if(strcmp(tk.lexema, "ineg") == 0){
-// 		M[*s] = 1 - M[*s];
-//     } else if(strcmp(tk.lexema, "icme") == 0){
-//         if(M[*s - 1] < M[*s]){
-//             M[*s - 1] = 1;
-//         }
-//         else {
-//             M[*s - 1] = 0;
-//             *s = *s - 1;
-//         }
-//     } else if(strcmp(tk.lexema, "icma") == 0){
-//         if(M[*s - 1] > M[*s]){
-//             M[*s - 1] = 1;
-//         }
-//         else{
-//             M[*s - 1] = 0;
-//             *s = *s - 1;
-//         }
-//     } else if(strcmp(tk.lexema, "iceq") == 0){
-//         if(M[*s - 1] == M[*s]){
-//             M[*s - 1] = 1;
-//         }
-//         else{
-//             M[*s - 1] = 0;
-//             *s = *s - 1;
-//         }
-//     } else if(strcmp(tk.lexema, "icdif") == 0){
-//         if(M[*s - 1] != M[*s]){
-//             M[*s - 1] = 1;
-//         }
-//         else{
-//             M[*s - 1] = 0;
-//             *s = *s - 1;
-//         }        
-//     } else if(strcmp(tk.lexema, "icmeq") == 0){
-//         if(M[*s - 1] <= M[*s]){
-//             M[*s - 1] = 1;
-//         }
-//         else{
-//             M[*s - 1] = 0;
-//             *s = *s - 1;
-//         }
-//     } else if(strcmp(tk.lexema, "icmaq") == 0){
-//         if(M[*s - 1] >= M[*s]){
-//             M[*s - 1] = 1;
-//         }
-//         else{
-//             M[*s - 1] = 0;
-//             *s = *s - 1;
-//         }
-//     } 
-//     // else if (strcmp(tk.lexema, "ijmp") == 0){
-//     //     *s = c; 
-//     // } else if (strcmp(tk.lexema, "ijmpf") == 0){
-//     //     if ((M[*s] = 0) ){
-//     //         *s = c;
-//     //     }
-//     //     else{
-//     //         *s =  + 1;
-//     //     }
-//     // } else if (strcmp(tk.lexema, "inum") == 0){
+    if(strcmp(P[*i].type, "LDC") == 0){
+        *s = *s + 1; 
+        M[*s] = P[*i].arg1;
+    } else if(strcmp(P[*i].type, "LDV") == 0){
+        *s = *s + 1;
+        M[*s] = P[*i].arg1;
+    } else if(strcmp(P[*i].type, "ADD") == 0){
+        M[*s - 1] = M[*s - 1] + M[*s];
+        *s = *s - 1;
+    } else if(strcmp(P[*i].type, "SUB") == 0){
+        M[*s - 1] = M[*s - 1] - M[*s];
+        *s = *s - 1;
+    } else if(strcmp(P[*i].type, "MULT") == 0){
+        M[*s - 1] = M[*s - 1] * M[*s];
+        *s = *s - 1;
+    } else if(strcmp(P[*i].type, "DIVI") == 0){
+        M[*s - 1] = M[*s - 1] / M[*s];
+        *s = *s - 1;
+    } else if(strcmp(P[*i].type, "INV") == 0){
+        M[*s] = -(M[*s]);
+    } else if(strcmp(P[*i].type, "AND") == 0){
+        if(M[*s - 1] == 1 && M[*s] == 1){
+			M[*s - 1] = 1;
+		}
+		else{
+			M[*s - 1] = 0;
+			*s = *s - 1;
+		}
+    } else if(strcmp(P[*i].type, "OR") == 0){
+        if(M[*s - 1] == 1 || M[*s] == 1){
+			M[*s - 1] = 1;
+		}
+		else{
+			M[*s - 1] = 0;
+			*s = *s - 1;
+		}
+    } else if(strcmp(P[*i].type, "NEG") == 0){
+		M[*s] = 1 - M[*s];
+    } else if(strcmp(P[*i].type, "CME") == 0){
+        if(M[*s - 1] < M[*s]){
+            M[*s - 1] = 1;
+        }
+        else {
+            M[*s - 1] = 0;
+            *s = *s - 1;
+        }
+    } else if(strcmp(P[*i].type, "CMA") == 0){
+        if(M[*s - 1] > M[*s]){
+            M[*s - 1] = 1;
+        }
+        else{
+            M[*s - 1] = 0;
+            *s = *s - 1;
+        }
+    } else if(strcmp(P[*i].type, "CEQ") == 0){
+        if(M[*s - 1] == M[*s]){
+            M[*s - 1] = 1;
+        }
+        else{
+            M[*s - 1] = 0;
+            *s = *s - 1;
+        }
+    } else if(strcmp(P[*i].type, "CDIF") == 0){
+        if(M[*s - 1] != M[*s]){
+            M[*s - 1] = 1;
+        }
+        else{
+            M[*s - 1] = 0;
+            *s = *s - 1;
+        }        
+    } else if(strcmp(P[*i].type, "CMEQ") == 0){
+        if(M[*s - 1] <= M[*s]){
+            M[*s - 1] = 1;
+        }
+        else{
+            M[*s - 1] = 0;
+            *s = *s - 1;
+        }
+    } else if(strcmp(P[*i].type, "CMAQ") == 0){
+        if(M[*s - 1] >= M[*s]){
+            M[*s - 1] = 1;
+        }
+        else{
+            M[*s - 1] = 0;
+            *s = *s - 1;
+        }
+    } else if (strcmp(P[*i].type, "JMPF") == 0){
+        *s = c; 
+    } else if (strcmp(P[*i].type, "JMP") == 0){
+        if ((M[*s] = 0) ){
+            *s = c;
+        }
+        else{
+            *s =  + 1;
+        }
+    } else if (strcmp(P[*i].type, "NUM") == 0){
         
-//     // }
+    }
 
-
-//     c = fgetc(file);
     
-// }
+}
 
 int main(int argc, char *argv[])
 {
 
-    int M[1000];
+    int M[1000]; // The region of the data stack M that will contain the values ​​manipulated by the instructions of the MVD.
+    instru P[1000]; // The program region P that will contain the MVD instructions.
     int i = 0; // registrador do programa
     int s = 0; // registrador da pilha de valores
-    char c;
-    instru P[1000];
 
+    int counter = 0;
+    char c;
+
+    // cleaning the terminal after begin
     #ifdef _WIN32
         system("cls");
     #else
         system("clear");
     #endif
 
+    // checking for correct number of arguments
     if(argc != 2){
         printf("Usage: ./mvd <filename>.o\n");
         return 1;
     }
 
-
+    // checking if the file can be opened
     file = fopen(argv[1], "r");
     if (file == NULL) {
         fprintf(stderr, "Erro ao abrir '%s': %s\n", argv[1], strerror(errno));
@@ -481,11 +487,40 @@ int main(int argc, char *argv[])
     }
     printf("Arquivo aberto: %s\n", argv[1]);
 
+    // populating the P stack
     commandPile(P, &i, file);
 
-    for (i = 0; i < 37; i++){
-        printf("P[%d]: %s %d %d\n", i, P[i].type, P[i].arg1, P[i].arg2);
+    // for (i = 0; i < 37; i++){
+    //     printf("P[%d]: %s %d %d\n", i, P[i].type, P[i].arg1, P[i].arg2);
+    // }
+
+    // Seleciona modo de execução: 1 = direto, 2 = passo a passo
+    int mode = 0;
+    char inbuf[16];
+    printf("\nSelecione o modo de execucao:\n");
+    printf("1 - Direto (ate %d)\n", linenumb);
+    printf("2 - Passo a passo (pressione Enter a cada instrucao)\n> ");
+    if (fgets(inbuf, sizeof(inbuf), stdin) != NULL) {
+        mode = atoi(inbuf);
     }
+    if (mode != 2) mode = 1; // padrão: direto
+
+    if (mode == 2) {
+        for (; i < linenumb; i++) {
+            executionFunction(P, M, &s, &i);
+            printf("(i=%d) Pressione Enter para continuar...", i+1);
+            fflush(stdout);
+            int ch;
+            // Consome até fim de linha
+            do { ch = getchar(); } while (ch != '\n' && ch != EOF);
+        }
+    } else {
+        for (; i < linenumb; i++) {
+            executionFunction(P, M, &s, &i);
+        }
+    }
+
+    fclose(file);
 
     return 0;
 }
