@@ -1,186 +1,526 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
+#include <errno.h>
+#define buffer 24
 
-enum instructions {ildc, ildv, iadd, isub, imult, idivi,
-                   iinv, iand, ior, ineg, icme, icma, iceq,
-                   icdif, icmeq, icmaq, ijmp, ijmpf, inum};
-
-typedef struct token{
-    char *lexema;
-    int tipo;
-}token;
-
+const char *instructionsVector[] = {
+    "LDC", "LDV", "ADD", "SUB", "MULT", "DIVI",
+    "INV", "AND", "OR", "NEG", "CME", "CMA", "CEQ", "CDIF", "CMEQ",
+    "CMAQ", "JMPF", "JMP", "NUM", "CALL", "STR", "RD", "PRN", "START",
+    "ALLOC", "DALLOC", "HLT", "RETURN","NULL"
+};
+    
+// struct for the P stack
+typedef struct instru{
+    char type[8];
+    int arg1;
+    int arg2;
+}instru;
+    
 int c;
+int linenumb = 0;
 FILE *file;
 
-token getInstruction(int execpile[], int *s){
-    token tk;
-    tk.lexema = (char *) malloc(20 * sizeof(char));
+void intToStr(int N, char *str) {
     int i = 0;
+  
+    // Save the copy of the number for sign
+    int sign = N;
 
-    while(c != ' ' && c != '\n' && c != EOF){
-        tk.lexema[i] = c;
-        i++;
-        c = fgetc(file);
+    // If the number is negative, make it positive
+    if (N < 0)
+        N = -N;
+
+    // Extract digits from the number and add them to the
+    // string
+    while (N > 0) {
+      
+        // Convert integer digit to character and store
+      	// it in the str
+        str[i++] = N % 10 + '0';
+      	N /= 10;
+    } 
+
+    // If the number was negative, add a minus sign to the
+    // string
+    if (sign < 0) {
+        str[i++] = '-';
     }
-    tk.lexema[i] = '\0';
-    if(c == ' '){
-        c = fgetc(file);
+
+    // Null-terminate the string
+    str[i] = '\0';
+
+    // Reverse the string to get the correct order
+    for (int j = 0, k = i - 1; j < k; j++, k--) {
+        char temp = str[j];
+        str[j] = str[k];
+        str[k] = temp;
     }
-    if(c == '\n'){
-        c = fgetc(file);
+}
+
+// this one is use to find the jump and change the label number to the line where it had to jump to
+void findJmp(char linebuffer[][buffer], char numbj[], int linenumb, int x){
+
+    char line[buffer]; // use to take a line from the linebuffer and look on it for the jump 
+    char *found_match = NULL; // use to check for the jump label on the line
+    int flagL = 0;// flag for check if the label had already been change or not
+    int Lpos = 0; // position of the L on the line
+    int numpos = 0; // position of the number on the line
+    char number_to_string[12]; // hold the string version of x to be add on the line
+
+    for (int i = 0; i < linenumb; i++){ // will run thruogh the entire document looking for JMPF or JMP in this order
+        strcpy(line, linebuffer[i]);
+        
+        char *p = NULL; 
+        int jmp_len = 0; 
+
+        // looking for JMPF on the program
+        p = strstr(line, "JMPF");
+        if (p != NULL) {
+            jmp_len = 4;
+            p += jmp_len;// jumping to after the command
+
+            while (*p != '\0' && isspace((unsigned char)*p)) {
+                p++;
+            }
+
+            // check for 'L' indicating a label and save its position
+            if (*p == 'L') {
+                flagL = 1;
+                Lpos = (int)(p - line);
+                p++;
+            }
+
+            // find the number and his position in the line
+            found_match = strstr(line, numbj);
+            if (found_match != NULL) {
+                numpos = (int)(found_match - line);
+            }
+
+            // if it find the number on the line it will change it to x that contain the label line
+            if (found_match != 0 && flagL == 1) { 
+                int pos = (int)(p - line);
+                line[Lpos] = '\0';
+                intToStr(x,number_to_string);
+                strcat(line,number_to_string);
+                strcat(line,"\n");
+                strcpy(linebuffer[i], line);
+                flagL = 0;
+            }  
+        } 
+
+        // looking for JMP on the program
+        p = strstr(line, "JMP");
+        if (p != NULL) {
+            jmp_len = 3;
+            p += jmp_len;// jumping to after the command
+
+            while (*p != '\0' && isspace((unsigned char)*p)) {
+                p++; 
+            }
+
+            // check for 'L' indicating a label and save its position
+            if (*p == 'L') {
+                flagL = 1;
+                Lpos = (int)(p - line);
+                p++;
+            }
+        
+            // find the number and his position in the line
+            found_match = strstr(line, numbj);
+            if (found_match != NULL) {
+                numpos = (int)(found_match - line);
+            }
+
+            // if it find the number on the line it will change it to x that contain the label line
+            if (found_match != 0 && flagL == 1) { 
+                int pos = (int)(p - line);
+                line[Lpos] = '\0';
+                intToStr(x,number_to_string);
+                strcat(line,number_to_string);
+                strcat(line,"\n");
+                strcpy(linebuffer[i], line);
+                flagL = 0;
+            } 
+        } 
+
+        // looking for CALL on the program
+        p = strstr(line, "CALL");
+        if (p != NULL) {
+            jmp_len = 4;
+            p += jmp_len;// jumping to after the command
+
+            while (*p != '\0' && isspace((unsigned char)*p)) {
+                p++; 
+            }
+
+            // check for 'L' indicating a label and save its position
+            if (*p ==  'L') {
+                flagL = 1;
+                Lpos = (int)(p - line);
+                p++;
+            }
+        
+            // find the number and his position in the line
+            found_match = strstr(line, numbj);
+            if (found_match != NULL) {
+                numpos = (int)(found_match - line);
+            }
+
+            // if it find the number on the line it will change it to x that contain the label line
+            if (found_match != 0 && flagL == 1) {  
+                int pos = (int)(p - line);
+                line[Lpos] = '\0';
+                intToStr(x,number_to_string);
+                strcat(line,number_to_string);
+                strcat(line,"\n");
+                strcpy(linebuffer[i], line);
+                flagL = 0;
+            }  
+        } 
     }
-    if(strcmp(tk.lexema, "ildc") == 0){
+}
+
+
+
+void commandPile(instru P[], int *i, FILE *file){
+
+    char line [buffer]; 
+    char linebuffer[1000][buffer]; // line vector
+    int  x = 1;
+    char *instruFound; //instruction found on the line from the linebuffer 
+    char isntruFvector[8]; // instruction from the instructionvector
+    char numbj[3], L;// variable to save the jump number provisionally
+    int  jumpInstruction = 8; // use to jump afeter the intruction on the line 
+
+    // reading and storing the lines on the line vector
+    while (fgets(line, buffer, file) != NULL){
+        strcpy(linebuffer[linenumb], line);
+        linenumb++;
+    }
+    
+    // check for labels on the four first spaces of the lins
+    for(; x < linenumb; x ++){
+        strcpy(line, linebuffer[x]);
+
+        for (int y = 0; y < 4; y++){
+
+            if(isdigit((unsigned char)line[y])){
+                    
+                if (y + 1 < 4 && isdigit((unsigned char)line[y+1])) {
+                    
+                    // saving the label number to use it on the findJmp function 
+                    numbj[0] = line[y];
+                    numbj[1] = line[y+1];
+                    numbj[2] = '\0';
+                    
+                    // this FOR remove the label from the string
+                    for (int j = 0; j < 4; j++){
+                        line[j] = ' ';
+                    }
+                    strcpy(linebuffer[x], line);
+
+                    findJmp(linebuffer, numbj, linenumb, x + 1); 
+                    break;
+                    
+                } else {
+
+                    // saving the label number to use it on the findJmp function 
+                    numbj[0] = line[y];
+                    numbj[1] = '\0';
+
+                    // this FOR remove the label from the string
+                    for (int j = 0; j < 4; j++){
+                        line[j] = ' ';
+                    }
+                    strcpy(linebuffer[x], line);
+
+
+                    findJmp(linebuffer, numbj, linenumb, x + 1);
+                    break;
+                }
+            }
+        }
+    }
+
+    for(int i = 0; i < linenumb; i++){
+        printf("%s",linebuffer[i]);
+    }
+    
+    // populating the P stack
+    for(int x = 0; x < linenumb; x++){
+        strcpy(line, linebuffer[x]);
+        for (int i = 0; i <= 28; i++){
+            strcpy(isntruFvector, instructionsVector[i]);
+            instruFound = strstr(line, isntruFvector);
+            if(instruFound != NULL){
+                strcpy (P[x].type , isntruFvector);
+                if (strstr(isntruFvector, "ALLOC")){
+                    for(int j = 0; j < strlen(line); j++){
+                        if (isdigit((unsigned char)line[j])){
+                            P[x].arg1 = line[j] - '0';
+                            j++;
+                            while (j < strlen(line)){
+                                if (isdigit((unsigned char)line[j])){
+                                    P[x].arg2 = line[j] - '0';
+                                    break;
+                                }
+                                j++;
+                            }
+                            break;
+                        }
+                    }
+                    break;
+                }else if(strstr(isntruFvector, "JMPF" )){
+                    for(int j = 0; j < strlen(line); j++){
+                        if (isdigit((unsigned char)line[j])){
+                            P[x].arg1 = 0;
+                            while (j < strlen(line)){
+                                if (isdigit((unsigned char)line[j])){
+                                    P[x].arg1 = P[x].arg1 * 10 + (line[j] - '0');
+                                }
+                                j++;
+                            }
+                            break;
+                        }
+                    }
+                    break;
+                }else if(strstr(isntruFvector, "JMP" )){
+                    for(int j = 0; j < strlen(line); j++){
+                        if (isdigit((unsigned char)line[j])){
+                            P[x].arg1 = 0;
+                            while (j < strlen(line)){
+                                if (isdigit((unsigned char)line[j])){
+                                    P[x].arg1 = P[x].arg1 * 10 + (line[j] - '0');
+                                }
+                                j++;
+                            }
+                            break;
+                        }
+                    }
+                    break;
+                }else if(strstr(isntruFvector, "CALL" )){
+                    for(int j = 0; j < strlen(line); j++){
+                        if (isdigit((unsigned char)line[j])){
+                            P[x].arg1 = 0;
+                            while (j < strlen(line)){
+                                if (isdigit((unsigned char)line[j])){
+                                    P[x].arg1 = P[x].arg1 * 10 + (line[j] - '0');
+                                }
+                                j++;
+                            }
+                            break;
+                        }
+                    }
+                   break;
+                }else if(strstr(instruFound,"LDV")){
+                    for(int j = 0; j < strlen(line); j++){
+                        if (isdigit((unsigned char)line[j])){
+                            P[x].arg1 = line[j] - '0';
+                            printf("ARG1: %d\n", P[x].arg1);
+                            break;
+                        }
+                    }
+                    break;
+                }else if(strstr(instruFound,"LDC")){
+                    for(int j = 0; j < strlen(line); j++){
+                        if (isdigit((unsigned char)line[j])){
+                            P[x].arg1 = 0;
+                            while (j < strlen(line)){
+                                if (isdigit((unsigned char)line[j])){
+                                    P[x].arg1 = P[x].arg1 * 10 + (line[j] - '0');
+                                }
+                                j++;
+                            }
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+    }   
+}
+
+// taking the things from the vector and executing they
+instru executionFunction(instru P[], int M[], int *s, int *i){
+    printf("Executing P[%d]: %s %d %d\n", *i, P[*i].type, P[*i].arg1, P[*i].arg2);
+    printf("Stack top (s=%d): \n", *s);
+    for (int j = 0; j <= *s; j++) {
+        printf("%d \n", M[j]);
+    }
+    printf("\n");
+
+    if(strcmp(P[*i].type, "LDC") == 0){
         *s = *s + 1; 
-        execpile[*s] = c;
-    } else if(strcmp(tk.lexema, "ildv") == 0){
+        M[*s] = P[*i].arg1;
+    } else if(strcmp(P[*i].type, "LDV") == 0){
         *s = *s + 1;
-        execpile[*s] = c;
-    } else if(strcmp(tk.lexema, "iadd") == 0){
-        execpile[*s - 1] = execpile[*s - 1] + execpile[*s];
+        M[*s] = P[*i].arg1;
+    } else if(strcmp(P[*i].type, "ADD") == 0){
+        M[*s - 1] = M[*s - 1] + M[*s];
         *s = *s - 1;
-    } else if(strcmp(tk.lexema, "isub") == 0){
-        execpile[*s - 1] = execpile[*s - 1] - execpile[*s];
+    } else if(strcmp(P[*i].type, "SUB") == 0){
+        M[*s - 1] = M[*s - 1] - M[*s];
         *s = *s - 1;
-    } else if(strcmp(tk.lexema, "imult") == 0){
-        execpile[*s - 1] = execpile[*s - 1] * execpile[*s];
+    } else if(strcmp(P[*i].type, "MULT") == 0){
+        M[*s - 1] = M[*s - 1] * M[*s];
         *s = *s - 1;
-    } else if(strcmp(tk.lexema, "idivi") == 0){
-        execpile[*s - 1] = execpile[*s - 1] / execpile[*s];
+    } else if(strcmp(P[*i].type, "DIVI") == 0){
+        M[*s - 1] = M[*s - 1] / M[*s];
         *s = *s - 1;
-    } else if(strcmp(tk.lexema, "iinv") == 0){
-        execpile[*s] = -(execpile[*s]);
-    } else if(strcmp(tk.lexema, "iand") == 0){
-        if(execpile[*s - 1] == 1 && execpile[*s] == 1){
-			execpile[*s - 1] = 1;
+    } else if(strcmp(P[*i].type, "INV") == 0){
+        M[*s] = -(M[*s]);
+    } else if(strcmp(P[*i].type, "AND") == 0){
+        if(M[*s - 1] == 1 && M[*s] == 1){
+			M[*s - 1] = 1;
 		}
 		else{
-			execpile[*s - 1] = 0;
+			M[*s - 1] = 0;
 			*s = *s - 1;
 		}
-    } else if(strcmp(tk.lexema, "ior") == 0){
-        if(execpile[*s - 1] == 1 || execpile[*s] == 1){
-			execpile[*s - 1] = 1;
+    } else if(strcmp(P[*i].type, "OR") == 0){
+        if(M[*s - 1] == 1 || M[*s] == 1){
+			M[*s - 1] = 1;
 		}
 		else{
-			execpile[*s - 1] = 0;
+			M[*s - 1] = 0;
 			*s = *s - 1;
 		}
-    } else if(strcmp(tk.lexema, "ineg") == 0){
-		execpile[*s] = 1 - execpile[*s];
-    } else if(strcmp(tk.lexema, "icme") == 0){
-        if(execpile[*s - 1] < execpile[*s]){
-            execpile[*s - 1] = 1;
+    } else if(strcmp(P[*i].type, "NEG") == 0){
+		M[*s] = 1 - M[*s];
+    } else if(strcmp(P[*i].type, "CME") == 0){
+        if(M[*s - 1] < M[*s]){
+            M[*s - 1] = 1;
         }
         else {
-            execpile[*s - 1] = 0;
+            M[*s - 1] = 0;
             *s = *s - 1;
         }
-    } else if(strcmp(tk.lexema, "icma") == 0){
-        if(execpile[*s - 1] > execpile[*s]){
-            execpile[*s - 1] = 1;
+    } else if(strcmp(P[*i].type, "CMA") == 0){
+        if(M[*s - 1] > M[*s]){
+            M[*s - 1] = 1;
         }
         else{
-            execpile[*s - 1] = 0;
+            M[*s - 1] = 0;
             *s = *s - 1;
         }
-    } else if(strcmp(tk.lexema, "iceq") == 0){
-        if(execpile[*s - 1] == execpile[*s]){
-            execpile[*s - 1] = 1;
+    } else if(strcmp(P[*i].type, "CEQ") == 0){
+        if(M[*s - 1] == M[*s]){
+            M[*s - 1] = 1;
         }
         else{
-            execpile[*s - 1] = 0;
+            M[*s - 1] = 0;
             *s = *s - 1;
         }
-    } else if(strcmp(tk.lexema, "icdif") == 0){
-        if(execpile[*s - 1] != execpile[*s]){
-            execpile[*s - 1] = 1;
+    } else if(strcmp(P[*i].type, "CDIF") == 0){
+        if(M[*s - 1] != M[*s]){
+            M[*s - 1] = 1;
         }
         else{
-            execpile[*s - 1] = 0;
+            M[*s - 1] = 0;
             *s = *s - 1;
         }        
-    } else if(strcmp(tk.lexema, "icmeq") == 0){
-        if(execpile[*s - 1] <= execpile[*s]){
-            execpile[*s - 1] = 1;
+    } else if(strcmp(P[*i].type, "CMEQ") == 0){
+        if(M[*s - 1] <= M[*s]){
+            M[*s - 1] = 1;
         }
         else{
-            execpile[*s - 1] = 0;
+            M[*s - 1] = 0;
             *s = *s - 1;
         }
-    } else if(strcmp(tk.lexema, "icmaq") == 0){
-        if(execpile[*s - 1] >= execpile[*s]){
-            execpile[*s - 1] = 1;
+    } else if(strcmp(P[*i].type, "CMAQ") == 0){
+        if(M[*s - 1] >= M[*s]){
+            M[*s - 1] = 1;
         }
         else{
-            execpile[*s - 1] = 0;
+            M[*s - 1] = 0;
             *s = *s - 1;
         }
-    } else if (strcmp(tk.lexema, "ijmp") == 0){
-        *s = c;
+    } else if (strcmp(P[*i].type, "JMPF") == 0){
+        *s = c; 
+    } else if (strcmp(P[*i].type, "JMP") == 0){
+        if ((M[*s] = 0) ){
+            *s = c;
+        }
+        else{
+            *s =  + 1;
+        }
+    } else if (strcmp(P[*i].type, "NUM") == 0){
+        
     }
 
-    c = fgetc(file);
     
-    return tk;
 }
 
 int main(int argc, char *argv[])
 {
+
+    int M[1000]; // The region of the data stack M that will contain the values ​​manipulated by the instructions of the MVD.
+    instru P[1000]; // The program region P that will contain the MVD instructions.
+    int i = 0; // registrador do programa
+    int s = 0; // registrador da pilha de valores
+
+    int counter = 0;
+    char c;
+
+    // cleaning the terminal after begin
+    #ifdef _WIN32
+        system("cls");
+    #else
+        system("clear");
+    #endif
+
+    // checking for correct number of arguments
     if(argc != 2){
         printf("Usage: ./mvd <filename>.o\n");
         return 1;
     }
 
-    int execpile[1000], s = -1;
-
+    // checking if the file can be opened
     file = fopen(argv[1], "r");
-
-    c = fgetc(file); 
-
-    while(c != EOF){
-        getInstruction(execpile, &s);
+    if (file == NULL) {
+        fprintf(stderr, "Erro ao abrir '%s': %s\n", argv[1], strerror(errno));
+        return 1;
     }
-    return 0;
-}
+    printf("Arquivo aberto: %s\n", argv[1]);
 
+    // populating the P stack
+    commandPile(P, &i, file);
 
+    // for (i = 0; i < 37; i++){
+    //     printf("P[%d]: %s %d %d\n", i, P[i].type, P[i].arg1, P[i].arg2);
+    // }
 
+    // Seleciona modo de execução: 1 = direto, 2 = passo a passo
+    int mode = 0;
+    char inbuf[16];
+    printf("\nSelecione o modo de execucao:\n");
+    printf("1 - Direto (ate %d)\n", linenumb);
+    printf("2 - Passo a passo (pressione Enter a cada instrucao)\n> ");
+    if (fgets(inbuf, sizeof(inbuf), stdin) != NULL) {
+        mode = atoi(inbuf);
+    }
+    if (mode != 2) mode = 1; // padrão: direto
 
-
-
-
-
-
-
-int findJmp(const char *linha, int numbj, int linenumb){
-    if (linha == NULL) return 0; // maybe change this verification later
-
-    char numbuf[32];
-    snprintf(numbuf, sizeof(numbuf), "%d", numbj);
-    size_t nlen = strlen(numbuf);
-
-    for (const char *p = linha; *p != '\0'; ++p){
-        printf("analisando comando: %.4s\n", p);
-        if (strncmp(p, "JMPF", 4) == 0) {
-            //printf("achamo um jmpf aqui vamos trocar o numero dele\n");
-            const char *q = p + 4;
-            while (isspace((unsigned char)*q)) q++;
-            if (strncmp(q, numbuf, nlen) == 0 && 
-                (q[nlen] == '\0' || isspace((unsigned char)q[nlen]) || ispunct((unsigned char)q[nlen]))) {
-                return (int)(q - linha); 
-            }
+    if (mode == 2) {
+        for (; i < linenumb; i++) {
+            executionFunction(P, M, &s, &i);
+            printf("(i=%d) Pressione Enter para continuar...", i+1);
+            fflush(stdout);
+            int ch;
+            // Consome até fim de linha
+            do { ch = getchar(); } while (ch != '\n' && ch != EOF);
         }
-        if (strncmp(p, "JMP", 3) == 0) {
-            //printf("achamo um jmpf aqui vamos trocar o numero dele\n");
-            const char *q = p + 3;
-            while (isspace((unsigned char)*q)) q++;
-            if (strncmp(q, numbuf, nlen) == 0 &&
-                (q[nlen] == '\0' || isspace((unsigned char)q[nlen]) || ispunct((unsigned char)q[nlen]))) {
-                return (int)(q - linha);
-            }
+    } else {
+        for (; i < linenumb; i++) {
+            executionFunction(P, M, &s, &i);
         }
     }
+
+    fclose(file);
+
     return 0;
 }
