@@ -3,6 +3,9 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
+#ifdef _WIN32
+#include <conio.h> // _kbhit, _getch para detectar ESC no Windows
+#endif
 #define buffer 24
 
 const char *instructionsVector[] = {
@@ -15,8 +18,8 @@ const char *instructionsVector[] = {
 // struct for the P stack
 typedef struct instru{
     char type[8];
-    int arg1;
-    int arg2;
+    int m;
+    int n;
 }instru;
     
 int c;
@@ -245,9 +248,9 @@ void commandPile(instru P[], int *i, FILE *file){
         }
     }
 
-    for(int i = 0; i < linenumb; i++){
-        printf("%s",linebuffer[i]);
-    }
+    // for(int i = 0; i < linenumb; i++){
+    //     printf("%s",linebuffer[i]);
+    // }
     
     // populating the P stack
     for(int x = 0; x < linenumb; x++){
@@ -260,11 +263,11 @@ void commandPile(instru P[], int *i, FILE *file){
                 if (strstr(isntruFvector, "ALLOC")){
                     for(int j = 0; j < strlen(line); j++){
                         if (isdigit((unsigned char)line[j])){
-                            P[x].arg1 = line[j] - '0';
+                            P[x].m = line[j] - '0';
                             j++;
                             while (j < strlen(line)){
                                 if (isdigit((unsigned char)line[j])){
-                                    P[x].arg2 = line[j] - '0';
+                                    P[x].n = line[j] - '0';
                                     break;
                                 }
                                 j++;
@@ -276,10 +279,10 @@ void commandPile(instru P[], int *i, FILE *file){
                 }else if(strstr(isntruFvector, "JMPF" )){
                     for(int j = 0; j < strlen(line); j++){
                         if (isdigit((unsigned char)line[j])){
-                            P[x].arg1 = 0;
+                            P[x].m = 0;
                             while (j < strlen(line)){
                                 if (isdigit((unsigned char)line[j])){
-                                    P[x].arg1 = P[x].arg1 * 10 + (line[j] - '0');
+                                    P[x].m = P[x].m * 10 + (line[j] - '0');
                                 }
                                 j++;
                             }
@@ -290,10 +293,10 @@ void commandPile(instru P[], int *i, FILE *file){
                 }else if(strstr(isntruFvector, "JMP" )){
                     for(int j = 0; j < strlen(line); j++){
                         if (isdigit((unsigned char)line[j])){
-                            P[x].arg1 = 0;
+                            P[x].m = 0;
                             while (j < strlen(line)){
                                 if (isdigit((unsigned char)line[j])){
-                                    P[x].arg1 = P[x].arg1 * 10 + (line[j] - '0');
+                                    P[x].m = P[x].m * 10 + (line[j] - '0');
                                 }
                                 j++;
                             }
@@ -304,10 +307,10 @@ void commandPile(instru P[], int *i, FILE *file){
                 }else if(strstr(isntruFvector, "CALL" )){
                     for(int j = 0; j < strlen(line); j++){
                         if (isdigit((unsigned char)line[j])){
-                            P[x].arg1 = 0;
+                            P[x].m = 0;
                             while (j < strlen(line)){
                                 if (isdigit((unsigned char)line[j])){
-                                    P[x].arg1 = P[x].arg1 * 10 + (line[j] - '0');
+                                    P[x].m = P[x].m * 10 + (line[j] - '0');
                                 }
                                 j++;
                             }
@@ -318,8 +321,7 @@ void commandPile(instru P[], int *i, FILE *file){
                 }else if(strstr(instruFound,"LDV")){
                     for(int j = 0; j < strlen(line); j++){
                         if (isdigit((unsigned char)line[j])){
-                            P[x].arg1 = line[j] - '0';
-                            printf("ARG1: %d\n", P[x].arg1);
+                            P[x].m = line[j] - '0';
                             break;
                         }
                     }
@@ -327,10 +329,24 @@ void commandPile(instru P[], int *i, FILE *file){
                 }else if(strstr(instruFound,"LDC")){
                     for(int j = 0; j < strlen(line); j++){
                         if (isdigit((unsigned char)line[j])){
-                            P[x].arg1 = 0;
+                            P[x].m = 0;
                             while (j < strlen(line)){
                                 if (isdigit((unsigned char)line[j])){
-                                    P[x].arg1 = P[x].arg1 * 10 + (line[j] - '0');
+                                    P[x].m = P[x].m * 10 + (line[j] - '0');
+                                }
+                                j++;
+                            }
+                            break;
+                        }
+                    }
+                    break;
+                }else if(strstr(instruFound,"STR")){
+                    for(int j = 0; j < strlen(line); j++){
+                        if (isdigit((unsigned char)line[j])){
+                            P[x].m = 0;
+                            while (j < strlen(line)){
+                                if (isdigit((unsigned char)line[j])){
+                                    P[x].m = P[x].m * 10 + (line[j] - '0');
                                 }
                                 j++;
                             }
@@ -346,19 +362,13 @@ void commandPile(instru P[], int *i, FILE *file){
 
 // taking the things from the vector and executing they
 instru executionFunction(instru P[], int M[], int *s, int *i){
-    printf("Executing P[%d]: %s %d %d\n", *i, P[*i].type, P[*i].arg1, P[*i].arg2);
-    printf("Stack top (s=%d): \n", *s);
-    for (int j = 0; j <= *s; j++) {
-        printf("%d \n", M[j]);
-    }
-    printf("\n");
-
+    
     if(strcmp(P[*i].type, "LDC") == 0){
         *s = *s + 1; 
-        M[*s] = P[*i].arg1;
+        M[*s] = P[*i].m;
     } else if(strcmp(P[*i].type, "LDV") == 0){
         *s = *s + 1;
-        M[*s] = P[*i].arg1;
+        M[*s] = P[*i].m;
     } else if(strcmp(P[*i].type, "ADD") == 0){
         M[*s - 1] = M[*s - 1] + M[*s];
         *s = *s - 1;
@@ -375,22 +385,22 @@ instru executionFunction(instru P[], int M[], int *s, int *i){
         M[*s] = -(M[*s]);
     } else if(strcmp(P[*i].type, "AND") == 0){
         if(M[*s - 1] == 1 && M[*s] == 1){
-			M[*s - 1] = 1;
+            M[*s - 1] = 1;
 		}
 		else{
-			M[*s - 1] = 0;
+            M[*s - 1] = 0;
 			*s = *s - 1;
 		}
     } else if(strcmp(P[*i].type, "OR") == 0){
         if(M[*s - 1] == 1 || M[*s] == 1){
-			M[*s - 1] = 1;
+            M[*s - 1] = 1;
 		}
 		else{
-			M[*s - 1] = 0;
+            M[*s - 1] = 0;
 			*s = *s - 1;
 		}
     } else if(strcmp(P[*i].type, "NEG") == 0){
-		M[*s] = 1 - M[*s];
+        M[*s] = 1 - M[*s];
     } else if(strcmp(P[*i].type, "CME") == 0){
         if(M[*s - 1] < M[*s]){
             M[*s - 1] = 1;
@@ -440,24 +450,62 @@ instru executionFunction(instru P[], int M[], int *s, int *i){
             *s = *s - 1;
         }
     } else if (strcmp(P[*i].type, "JMPF") == 0){
-        *s = c; 
-    } else if (strcmp(P[*i].type, "JMP") == 0){
         if ((M[*s] = 0) ){
-            *s = c;
+            *s = P[*i].m;
         }
         else{
             *s =  + 1;
         }
-    } else if (strcmp(P[*i].type, "NUM") == 0){
-        
-    }
+    } else if (strcmp(P[*i].type, "JMP") == 0){
+        *i = P[*i].m; 
+    } else if (strcmp(P[*i].type, "DALLOC") == 0){
+        for (int k = (P[*i].n - 1); k > 0; k --){
+            M[P[*i].m + k] = M[*s];
+            *s = *s - 1;
+        }
+    } else if (strcmp(P[*i].type, "ALLOC") == 0){
+        for (int k = 0; k <= (P[*i].n - 1) ; k++){
+            printf("Alocado\n");
+            *s = *s + 1;
+            M[*s] = M[P[*i].m + k];
+        }
+    } else if (strcmp(P[*i].type, "CALL") == 0){
+        *s = *s + 1;
+        M[*s] = *i + 1;
+        *i = P[*i].m;
+    } else if (strcmp(P[*i].type, "START") == 0) {
+        *s = *s + 1;
+    } else if (strcmp(P[*i].type, "RETURN") == 0){
+        *i = M[*s];
+        *s = *s - 1;
+    }else if (strcmp(P[*i].type, "HLT") == 0){
+       
+    }else if (strcmp(P[*i].type, "RD") == 0){
+        *s = *s + 1;
+        int auxScan = 0;
+        scanf("%d", auxScan);
+    }else if (strcmp(P[*i].type, "PRN") == 0){
+        int auxPrint;
+        printf("%d",auxPrint);
+    }else if (strcmp(P[*i].type, "STR") == 0){
 
+    }
+    else {
+        printf("esse comando nao foi feito ainda\n");
+    }
+    printf("Executing P[%d]: %s %d %d\n", *i, P[*i].type, P[*i].m, P[*i].n);
+    printf("Stack top (s=%d): \n", *s);
+    for (int j = 1; j <= *s; j++) {
+        printf("[%d]:%d \n",j, M[j]);
+    }
+    printf("\n");
+    
     
 }
 
 int main(int argc, char *argv[])
 {
-
+    
     int M[1000]; // The region of the data stack M that will contain the values ​​manipulated by the instructions of the MVD.
     instru P[1000]; // The program region P that will contain the MVD instructions.
     int i = 0; // registrador do programa
@@ -491,10 +539,10 @@ int main(int argc, char *argv[])
     commandPile(P, &i, file);
 
     // for (i = 0; i < 37; i++){
-    //     printf("P[%d]: %s %d %d\n", i, P[i].type, P[i].arg1, P[i].arg2);
+    //     printf("P[%d]: %s %d %d\n", i, P[i].type, P[i].m, P[i].n);
     // }
 
-    // Seleciona modo de execução: 1 = direto, 2 = passo a passo
+    // Selection of execution mode =================================================
     int mode = 0;
     char inbuf[16];
     printf("\nSelecione o modo de execucao:\n");
@@ -503,22 +551,46 @@ int main(int argc, char *argv[])
     if (fgets(inbuf, sizeof(inbuf), stdin) != NULL) {
         mode = atoi(inbuf);
     }
-    if (mode != 2) mode = 1; // padrão: direto
+    if (mode != 2) mode = 1; // default to direct mode if invalid input
 
+    int aborted = 0;
     if (mode == 2) {
         for (; i < linenumb; i++) {
             executionFunction(P, M, &s, &i);
-            printf("(i=%d) Pressione Enter para continuar...", i+1);
+            printf("(i=%d) Pressione Enter para continuar (ESC para sair)...", i+1);
             fflush(stdout);
+
             int ch;
-            // Consome até fim de linha
-            do { ch = getchar(); } while (ch != '\n' && ch != EOF);
+            while (1) {
+                ch = getchar();
+                if (ch == '\n' || ch == EOF) break;
+                if (ch == 27) {
+                    aborted = 1;
+                    break;
+                }
+            }
+            if (aborted) break;
         }
     } else {
         for (; i < linenumb; i++) {
+
+#ifdef _WIN32
+            if (_kbhit()) {
+                int ch = _getch();
+                if (ch == 27) {
+                    aborted = 1;
+                    break;
+                }
+            }
+#endif
             executionFunction(P, M, &s, &i);
         }
     }
+
+    if (aborted) {
+        printf("\nExecucao interrompida pelo usuario (ESC).\n");
+    }
+    // =============================================================================
 
     fclose(file);
 
