@@ -46,8 +46,8 @@ void lexicalSetup(FILE *codeFile){
 
 
 int isWhitespace(int c){
-    // 8, 9, 10, 32 are whitespace
-    if (c == (int)'\b' || c == (int)'\t' || c == (int)'\n' || c == (int)' '){
+    // 8, 9, 10, 13, 32 are whitespace
+    if (c == (int)'\b' || c == (int)'\t' || c == (int)'\n' || c == (int)'\r' || c == (int)' '){
         return 1;
     }
 
