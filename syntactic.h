@@ -46,12 +46,10 @@ void procCallAnalysis(char *procName){
     if (aux == -1){
         printf("Error in line %d: Procedure '%s' used, but not declared.\n", line, procName);
         exit(-1);
+    } else if (symbolsTable.id[aux].type != tprocedimento){
+        printf("Error in line %d: Attempting to use '%s' as procedure, despite it being declared as something else.", line, procName);
+        exit(-1);
     }
-    /// TODO: ask teacher if procedure calls should be able to call functions as well and if they should throw an error if it is just a variable
-//    else if (symbolsTable.id[aux].type != tprocedimento){
-//        printf("Error in line %d: Procedure '%s' used, but not declared.", line, procName);
-//        exit(-1);
-//    }
     codeGen("   ", "CALL   ", symbolsTable.id[aux].address, "   ");
 }
 
@@ -637,6 +635,7 @@ void blockAnalysis() {
 }
 
 void syntactical() {
+    char addr[4], cont[4];
 //    printf("<programa> -> ");
     setupSymbolsTable();
     tk = lexical();
@@ -649,6 +648,10 @@ void syntactical() {
 //            printf("programa %s", tk.lexema);
             insertTable(tk.lexema, tnomedeprograma, 0, "");
             codeGen("   ", "START  ", "   ", "   ");
+            sprintf(addr, "%d", availableAddr);
+            sprintf(cont, ",%d", 1);
+            codeGen("   ", "ALLOC  ", addr, cont);
+            availableAddr++;
             free(tk.lexema);
             tk = lexical();
 
@@ -662,6 +665,7 @@ void syntactical() {
                     lexical();
                     if (c == EOF || c == '{'){
                         unstackLevel();
+                        codeGen("   ", "DALLOC ", addr, cont);
                         codeGen("   ", "HLT    ", "   ", "   ");
                     } else {
                         printf("Error in line %d: Code outside of the program scope.\n", line);

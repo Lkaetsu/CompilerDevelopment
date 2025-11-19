@@ -29,7 +29,7 @@ int label, availableAddr;
 
 void setupSymbolsTable(){
     label = 1;
-    availableAddr = 1;
+    availableAddr = 0;
     symbolsTable.top = 0;
 }
 
