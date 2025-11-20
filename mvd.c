@@ -192,7 +192,7 @@ void commandPile(instru P[], int *i, FILE *file){
 
     char line [buffer]; 
     char linebuffer[1000][buffer]; // line vector
-    int  x = 1;
+    int  x = 0;
     char *instruFound; //instruction found on the line from the linebuffer 
     char isntruFvector[8]; // instruction from the instructionvector
     char numbj[3], L;// variable to save the jump number provisionally
@@ -248,9 +248,10 @@ void commandPile(instru P[], int *i, FILE *file){
         }
     }
 
-    // for(int i = 0; i < linenumb; i++){
-    //     printf("%s",linebuffer[i]);
-    // }
+    for(int i = 0; i < linenumb; i++){
+        printf("%s",linebuffer[i]);
+    }
+    printf("\n\n");
     
     // populating the P stack
     for(int x = 0; x < linenumb; x++){
@@ -361,29 +362,37 @@ void commandPile(instru P[], int *i, FILE *file){
 }
 
 // taking the things from the vector and executing they
-instru executionFunction(instru P[], int M[], int *s, int *i){
+int executionFunction(instru P[],int i, int M[], int *s, int *auxScan, int *auxPrint){
     
-    if(strcmp(P[*i].type, "LDC") == 0){
+    printf("Executing P[%d]: %s %d %d\n", i, P[i].type, P[i].m, P[i].n);
+    printf("Stack top (s=%d): \n", *s);
+    for (int j = 0; j <= *s; j++) {
+        printf("[%d]:%d \n",j, M[j]);
+    }
+    printf("\n"); 
+
+    printf("valor de entrada do I:%d\n",i);
+    if(strcmp(P[i].type, "LDC") == 0){
         *s = *s + 1; 
-        M[*s] = P[*i].m;
-    } else if(strcmp(P[*i].type, "LDV") == 0){
+        M[*s] = P[i].m;
+    } else if(strcmp(P[i].type, "LDV") == 0){
         *s = *s + 1;
-        M[*s] = P[*i].m;
-    } else if(strcmp(P[*i].type, "ADD") == 0){
+        M[*s] = M[P[i].m];
+    } else if(strcmp(P[i].type, "ADD") == 0){
         M[*s - 1] = M[*s - 1] + M[*s];
         *s = *s - 1;
-    } else if(strcmp(P[*i].type, "SUB") == 0){
+    } else if(strcmp(P[i].type, "SUB") == 0){
         M[*s - 1] = M[*s - 1] - M[*s];
         *s = *s - 1;
-    } else if(strcmp(P[*i].type, "MULT") == 0){
+    } else if(strcmp(P[i].type, "MULT") == 0){
         M[*s - 1] = M[*s - 1] * M[*s];
         *s = *s - 1;
-    } else if(strcmp(P[*i].type, "DIVI") == 0){
+    } else if(strcmp(P[i].type, "DIVI") == 0){
         M[*s - 1] = M[*s - 1] / M[*s];
         *s = *s - 1;
-    } else if(strcmp(P[*i].type, "INV") == 0){
+    } else if(strcmp(P[i].type, "INV") == 0){
         M[*s] = -(M[*s]);
-    } else if(strcmp(P[*i].type, "AND") == 0){
+    } else if(strcmp(P[i].type, "AND") == 0){
         if(M[*s - 1] == 1 && M[*s] == 1){
             M[*s - 1] = 1;
 		}
@@ -391,7 +400,7 @@ instru executionFunction(instru P[], int M[], int *s, int *i){
             M[*s - 1] = 0;
 			*s = *s - 1;
 		}
-    } else if(strcmp(P[*i].type, "OR") == 0){
+    } else if(strcmp(P[i].type, "OR") == 0){
         if(M[*s - 1] == 1 || M[*s] == 1){
             M[*s - 1] = 1;
 		}
@@ -399,9 +408,9 @@ instru executionFunction(instru P[], int M[], int *s, int *i){
             M[*s - 1] = 0;
 			*s = *s - 1;
 		}
-    } else if(strcmp(P[*i].type, "NEG") == 0){
+    } else if(strcmp(P[i].type, "NEG") == 0){
         M[*s] = 1 - M[*s];
-    } else if(strcmp(P[*i].type, "CME") == 0){
+    } else if(strcmp(P[i].type, "CME") == 0){
         if(M[*s - 1] < M[*s]){
             M[*s - 1] = 1;
         }
@@ -409,7 +418,7 @@ instru executionFunction(instru P[], int M[], int *s, int *i){
             M[*s - 1] = 0;
             *s = *s - 1;
         }
-    } else if(strcmp(P[*i].type, "CMA") == 0){
+    } else if(strcmp(P[i].type, "CMA") == 0){
         if(M[*s - 1] > M[*s]){
             M[*s - 1] = 1;
         }
@@ -417,7 +426,7 @@ instru executionFunction(instru P[], int M[], int *s, int *i){
             M[*s - 1] = 0;
             *s = *s - 1;
         }
-    } else if(strcmp(P[*i].type, "CEQ") == 0){
+    } else if(strcmp(P[i].type, "CEQ") == 0){
         if(M[*s - 1] == M[*s]){
             M[*s - 1] = 1;
         }
@@ -425,7 +434,7 @@ instru executionFunction(instru P[], int M[], int *s, int *i){
             M[*s - 1] = 0;
             *s = *s - 1;
         }
-    } else if(strcmp(P[*i].type, "CDIF") == 0){
+    } else if(strcmp(P[i].type, "CDIF") == 0){
         if(M[*s - 1] != M[*s]){
             M[*s - 1] = 1;
         }
@@ -433,7 +442,7 @@ instru executionFunction(instru P[], int M[], int *s, int *i){
             M[*s - 1] = 0;
             *s = *s - 1;
         }        
-    } else if(strcmp(P[*i].type, "CMEQ") == 0){
+    } else if(strcmp(P[i].type, "CMEQ") == 0){
         if(M[*s - 1] <= M[*s]){
             M[*s - 1] = 1;
         }
@@ -441,7 +450,7 @@ instru executionFunction(instru P[], int M[], int *s, int *i){
             M[*s - 1] = 0;
             *s = *s - 1;
         }
-    } else if(strcmp(P[*i].type, "CMAQ") == 0){
+    } else if(strcmp(P[i].type, "CMAQ") == 0){
         if(M[*s - 1] >= M[*s]){
             M[*s - 1] = 1;
         }
@@ -449,57 +458,59 @@ instru executionFunction(instru P[], int M[], int *s, int *i){
             M[*s - 1] = 0;
             *s = *s - 1;
         }
-    } else if (strcmp(P[*i].type, "JMPF") == 0){
+    } else if (strcmp(P[i].type, "JMPF") == 0){
         if ((M[*s] = 0) ){
-            *s = P[*i].m;
+            *s = P[i].m;
         }
         else{
             *s =  + 1;
         }
-    } else if (strcmp(P[*i].type, "JMP") == 0){
-        *i = P[*i].m; 
-    } else if (strcmp(P[*i].type, "DALLOC") == 0){
-        for (int k = (P[*i].n - 1); k > 0; k --){
-            M[P[*i].m + k] = M[*s];
+    } else if (strcmp(P[i].type, "JMP") == 0){
+        i = P[i].m; 
+        printf("valor que esta sendo retornado do I:%d\n",i);
+        return i - 1;
+    } else if (strcmp(P[i].type, "DALLOC") == 0){
+        for (int k = (P[i].n - 1); k > 0; k --){
+            M[P[i].m + k] = M[*s];
             *s = *s - 1;
         }
-    } else if (strcmp(P[*i].type, "ALLOC") == 0){
-        for (int k = 0; k <= (P[*i].n - 1) ; k++){
-            printf("Alocado\n");
+    } else if (strcmp(P[i].type, "ALLOC") == 0){
+        for (int k = 0; k <= (P[i].n - 1) ; k++){
             *s = *s + 1;
-            M[*s] = M[P[*i].m + k];
+            M[*s] = M[P[i].m + k];
         }
-    } else if (strcmp(P[*i].type, "CALL") == 0){
+    } else if (strcmp(P[i].type, "CALL") == 0){
         *s = *s + 1;
-        M[*s] = *i + 1;
-        *i = P[*i].m;
-    } else if (strcmp(P[*i].type, "START") == 0) {
+        M[*s] = i + 1;
+        i = P[i].m;
+        return i;
+    } else if (strcmp(P[i].type, "START") == 0) {
         *s = *s + 1;
-    } else if (strcmp(P[*i].type, "RETURN") == 0){
-        *i = M[*s];
+    } else if (strcmp(P[i].type, "RETURN") == 0){
+        i = M[*s];
         *s = *s - 1;
-    }else if (strcmp(P[*i].type, "HLT") == 0){
-       
-    }else if (strcmp(P[*i].type, "RD") == 0){
+    }else if (strcmp(P[i].type, "HLT") == 0){
+        
+    }else if (strcmp(P[i].type, "RD") == 0){
         *s = *s + 1;
-        int auxScan = 0;
-        scanf("%d", auxScan);
-    }else if (strcmp(P[*i].type, "PRN") == 0){
-        int auxPrint;
-        printf("%d",auxPrint);
-    }else if (strcmp(P[*i].type, "STR") == 0){
-
+        printf("\ndigite o valor de entrada:");
+        scanf("%d", &M[*s]);
+    }else if (strcmp(P[i].type, "PRN") == 0){
+        printf("%d",M[*s]);
+    }else if (strcmp(P[i].type, "STR") == 0){
+        M[P[i].m] = M[*s]; 
+        *s = *s - 1;
+    }else if (strcmp(P[i].type, "NULL") == 0){
+        printf("\nNULL\n");
     }
     else {
-        printf("esse comando nao foi feito ainda\n");
+        printf("esse comando nao foi feito ainda ;p\n");
     }
-    printf("Executing P[%d]: %s %d %d\n", *i, P[*i].type, P[*i].m, P[*i].n);
-    printf("Stack top (s=%d): \n", *s);
-    for (int j = 1; j <= *s; j++) {
-        printf("[%d]:%d \n",j, M[j]);
-    }
-    printf("\n");
     
+    
+    i++;
+    printf("valor que esta sendo retornado do I:%d\n",i);
+    return i;
     
 }
 
@@ -507,10 +518,13 @@ int main(int argc, char *argv[])
 {
     
     int M[1000]; // The region of the data stack M that will contain the values ​​manipulated by the instructions of the MVD.
+
     instru P[1000]; // The program region P that will contain the MVD instructions.
     int i = 0; // registrador do programa
     int s = 0; // registrador da pilha de valores
-
+    int auxScan = 0;// auxiliar variable for RD instruction
+    int auxPrint = 0;// auxiliar variable for PRN istruction
+    
     int counter = 0;
     char c;
 
@@ -538,11 +552,12 @@ int main(int argc, char *argv[])
     // populating the P stack
     commandPile(P, &i, file);
 
-    // for (i = 0; i < 37; i++){
-    //     printf("P[%d]: %s %d %d\n", i, P[i].type, P[i].m, P[i].n);
-    // }
+    // ================= Debugging For, It will print the intire P stack =================
+    for (int o = 0; o < linenumb; o++){
+        printf("P[%d]: %s %d %d\n", o, P[o].type, P[o].m, P[o].n);
+    }
 
-    // Selection of execution mode =================================================
+    // ================= Selection of execution mode =================
     int mode = 0;
     char inbuf[16];
     printf("\nSelecione o modo de execucao:\n");
@@ -555,8 +570,8 @@ int main(int argc, char *argv[])
 
     int aborted = 0;
     if (mode == 2) {
-        for (; i < linenumb; i++) {
-            executionFunction(P, M, &s, &i);
+        for (; counter < linenumb; counter++) {
+            i = executionFunction(P, i, M, &s, &auxScan, &auxPrint);
             printf("(i=%d) Pressione Enter para continuar (ESC para sair)...", i+1);
             fflush(stdout);
 
@@ -572,7 +587,7 @@ int main(int argc, char *argv[])
             if (aborted) break;
         }
     } else {
-        for (; i < linenumb; i++) {
+        for (; counter < linenumb; counter++) {
 
 #ifdef _WIN32
             if (_kbhit()) {
@@ -583,7 +598,7 @@ int main(int argc, char *argv[])
                 }
             }
 #endif
-            executionFunction(P, M, &s, &i);
+            i = executionFunction(P, i, M, &s, &auxScan, &auxPrint);
         }
     }
 

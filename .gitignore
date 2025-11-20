@@ -5,3 +5,4 @@
 *.vscode
 output
 teste _de_funcao.c
+buffertest.o
