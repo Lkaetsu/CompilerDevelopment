@@ -86,7 +86,7 @@ Expr posfixConversion(Expr *expr){
             storeExpr(&auxStack, expr->lexema[i], expr->type[i]);
         } else if (expr->type[i] == sfecha_parenteses){
             // Se for fecha-parênteses, desempilha tudo copiando na saída até o primeiro abre-parênteses (desempilhando-o)
-            for(int j = auxStack.top - 1; j > -1 || auxStack.type[j] != sabre_parenteses; j--){
+            for(int j = auxStack.top - 1; j > -1 && auxStack.type[j] != sabre_parenteses; j--){
                 storeExpr(&posfix, auxStack.lexema[j], auxStack.type[j]);
                 popExpr(&auxStack);
             }

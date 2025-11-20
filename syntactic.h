@@ -129,10 +129,12 @@ void termAnalysis(Expr *expr){
 }
 
 void simpleExpressionAnalysis(Expr *expr){
+    char buffer[3];
     // printf("<expressao simples> -> ");
     if (tk.simbolo == smais || tk.simbolo == smenos){
         // printf("%s ", tk.lexema);
-        storeExpr(expr, tk.lexema, tk.simbolo);
+        sprintf(buffer, "u%s", tk.lexema);
+        storeExpr(expr, buffer, tk.simbolo);
         free(tk.lexema);
         tk = lexical();
     }
@@ -301,6 +303,7 @@ void ifAnalysis(){
         if (tk.simbolo == ssenao){
             sprintf(auxrot2, "L%d", label);
             codeGen("   ", "JMP    ", auxrot2, "   ");
+            label++;
             codeGen(auxrot1, "NULL   ", "   ", "   ");
             // printf("senao \n");
             free(tk.lexema);

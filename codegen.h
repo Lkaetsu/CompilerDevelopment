@@ -76,7 +76,7 @@ void codeGenExpr(Expr posfix, int resultType){
                         printf("Error in line %d: Invalid operand '-' on a boolean.\n", line);
                         exit(-1);
                     }
-                    codeGen("    ", "INV    ", "    ", "    ");
+                    codeGen("   ", "INV    ", "   ", "   ");
                 } else {
                     if ((auxStack.type[auxStack.top - 1] == tbooleano) || (auxStack.type[auxStack.top - 2] == tbooleano)){
                         printf("Error in line %d: Invalid operation '-' on a boolean.\n", line);
