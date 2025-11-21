@@ -204,7 +204,9 @@ void unstackLevel(){
         free(symbolsTable.id[i].address);
     }
     symbolsTable.top = i + 1;
-    symbolsTable.id[i].scope = 0;
+    if (i > -1){
+        symbolsTable.id[i].scope = 0;
+    }
 
     if(aux > 0){
         sprintf(addr, "%d", availableAddr - aux);
