@@ -461,10 +461,29 @@ int executionFunction(instru P[],int i, int M[], int *s, int *auxScan, int *auxP
             i = i + 1;
         }
         *s = *s - 1;
+
+        // ====================== Prints =========================
+        printf("Stack top (s=%d): \n", *s);
+        for (int j = 0; j <= *s; j++) {
+            printf("[%d]:%d \n",j, M[j]);
+        }
+        printf("\n"); 
+        printf("valor que esta sendo retornado do I:%d\n",i);
+        // =======================================================
+
         return i;
     } else if (strcmp(P[i].type, "JMP") == 0){
         i = P[i].m; 
-        printf("valor que esta sendo retornado do I:%d\n",i);
+
+        // ====================== Prints =========================
+        printf("Stack top (s=%d): \n", *s);
+        for (int j = 0; j <= *s; j++) {
+            printf("[%d]:%d \n",j, M[j]);
+        }
+        printf("\n"); 
+        printf("valor que esta sendo retornado do I:%d\n",i - 1);
+        // =======================================================
+
         return i - 1;
     } else if (strcmp(P[i].type, "DALLOC") == 0){
         for (int k = (P[i].n - 1); k >= 0; k --){
@@ -480,22 +499,37 @@ int executionFunction(instru P[],int i, int M[], int *s, int *auxScan, int *auxP
         *s = *s + 1;
         M[*s] = i + 1;
         i = P[i].m;
+        // ====================== Prints =========================
+        printf("Stack top (s=%d): \n", *s);
+        for (int j = 0; j <= *s; j++) {
+            printf("[%d]:%d \n",j, M[j]);
+        }
+        printf("\n"); 
+        printf("valor que esta sendo retornado do I:%d\n",i);
+        // =======================================================
         return i;
     } else if (strcmp(P[i].type, "START") == 0) {
         *s = *s + 1;
     } else if (strcmp(P[i].type, "RETURN") == 0){
         i = M[*s];
         *s = *s - 1;
+        // ====================== Prints =========================
+        printf("Stack top (s=%d): \n", *s);
+        for (int j = 0; j <= *s; j++) {
+            printf("[%d]:%d \n",j, M[j]);
+        }
+        printf("\n"); 
         printf("valor que esta sendo retornado do I:%d\n",i);
+        // =======================================================
         return i;
     }else if (strcmp(P[i].type, "HLT") == 0){
         return -1;
     }else if (strcmp(P[i].type, "RD") == 0){
         *s = *s + 1;
-        printf("\ndigite o valor de entrada:");
+        printf("\nENTRADA DO PROGRAMA:");
         scanf("%d", &M[*s]);
     }else if (strcmp(P[i].type, "PRN") == 0){
-        printf("%d",M[*s]);
+        printf("\nSAIDA DO PROGRAMA:%d\n",M[*s]);
         *s = *s - 1;
     }else if (strcmp(P[i].type, "STR") == 0){
         M[P[i].m] = M[*s]; 
