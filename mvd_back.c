@@ -6,6 +6,10 @@
 #ifdef _WIN32
 #include <conio.h> // _kbhit, _getch para detectar ESC no Windows
 #endif
+#include <stdbool.h>
+#ifdef _WIN32
+#define strcasecmp _stricmp
+#endif
 #define buffer 24
 
 const char *instructionsVector[] = {
@@ -25,6 +29,43 @@ typedef struct instru{
 int c;
 int linenumb = 0;
 FILE *file;
+
+// ================== Modo Interface (protocolo para GUI Python) ==================
+// Ativado quando o programa é executado com terceiro argumento "--iface"
+// Protocolo de saída (linhas):
+// EVENT:READY linenumb=<n>
+// EVENT:INSTR idx=<i> type=<T> m=<m> n=<n>
+// EVENT:STACK s=<s> values=<v0>,<v1>,...,<vs>
+// EVENT:INPUT_REQUEST
+// EVENT:OUTPUT value=<x>
+// EVENT:DONE idx=<novo_i>
+// EVENT:HALT
+// EVENT:ABORTED
+// Comandos esperados via stdin quando aguardando controle:
+// CONTINUE -> executa próxima instrução
+// DIRECT   -> entra em modo direto (não aguarda mais comandos)
+// ABORT    -> aborta execução
+// Quando EVENT:INPUT_REQUEST for emitido a próxima linha recebida será tratada
+// como inteiro para a instrução RD.
+static bool interface_mode = false;      // se true, usa protocolo de eventos
+static bool direct_run_mode = false;     // se true, continua sem esperar comandos
+static bool waiting_input_value = false; // aguardando valor para RD
+
+static void trim_newline(char *s){
+    if(!s) return;
+    size_t len = strlen(s);
+    while(len && (s[len-1]=='\n' || s[len-1]=='\r')){ s[--len]='\0'; }
+}
+
+static void print_event_stack(int M[], int s){
+    printf("EVENT:STACK s=%d values=", s);
+    for(int j=0; j<=s; j++){
+        printf("%d", M[j]);
+        if(j < s) printf(",");
+    }
+    printf("\n");
+    fflush(stdout);
+}
 
 void intToStr(int N, char *str) {
     int i = 0;
@@ -363,9 +404,10 @@ void commandPile(instru P[], int *i, FILE *file){
 
 // taking the things from the vector and executing they
 int executionFunction(instru P[],int i, int M[], int *s, int *auxScan, int *auxPrint){
-    
-    printf("Executing P[%d]: %s %d %d\n", i, P[i].type, P[i].m, P[i].n);
-    printf("valor de entrada do I:%d\n",i);
+    if(!interface_mode){
+        printf("Executing P[%d]: %s %d %d\n", i, P[i].type, P[i].m, P[i].n);
+        printf("valor de entrada do I:%d\n",i);
+    }
     
     if(strcmp(P[i].type, "LDC") == 0){
         *s = *s + 1; 
@@ -393,16 +435,16 @@ int executionFunction(instru P[],int i, int M[], int *s, int *auxScan, int *auxP
 		}
 		else{
             M[*s - 1] = 0;
+			*s = *s - 1;
 		}
-        *s = *s - 1;
     } else if(strcmp(P[i].type, "OR") == 0){
         if(M[*s - 1] == 1 || M[*s] == 1){
             M[*s - 1] = 1;
 		}
 		else{
             M[*s - 1] = 0;
+			*s = *s - 1;
 		}
-        *s = *s - 1;
     } else if(strcmp(P[i].type, "NEG") == 0){
         M[*s] = 1 - M[*s];
     } else if(strcmp(P[i].type, "CME") == 0){
@@ -411,48 +453,48 @@ int executionFunction(instru P[],int i, int M[], int *s, int *auxScan, int *auxP
         }
         else {
             M[*s - 1] = 0;
+            *s = *s - 1;
         }
-        *s = *s - 1;
     } else if(strcmp(P[i].type, "CMA") == 0){
         if(M[*s - 1] > M[*s]){
             M[*s - 1] = 1;
         }
         else{
             M[*s - 1] = 0;
+            *s = *s - 1;
         }
-        *s = *s - 1;
     } else if(strcmp(P[i].type, "CEQ") == 0){
         if(M[*s - 1] == M[*s]){
             M[*s - 1] = 1;
         }
         else{
             M[*s - 1] = 0;
+            *s = *s - 1;
         }
-        *s = *s - 1;
     } else if(strcmp(P[i].type, "CDIF") == 0){
         if(M[*s - 1] != M[*s]){
             M[*s - 1] = 1;
         }
         else{
             M[*s - 1] = 0;
+            *s = *s - 1;
         }        
-        *s = *s - 1;
     } else if(strcmp(P[i].type, "CMEQ") == 0){
         if(M[*s - 1] <= M[*s]){
             M[*s - 1] = 1;
         }
         else{
             M[*s - 1] = 0;
+            *s = *s - 1;
         }
-        *s = *s - 1;
     } else if(strcmp(P[i].type, "CMAQ") == 0){
         if(M[*s - 1] >= M[*s]){
             M[*s - 1] = 1;
         }
         else{
             M[*s - 1] = 0;
+            *s = *s - 1;
         }
-        *s = *s - 1;
     } else if (strcmp(P[i].type, "JMPF") == 0){
         if ((M[*s] == 0) ){
             i = P[i].m;
@@ -487,14 +529,16 @@ int executionFunction(instru P[],int i, int M[], int *s, int *auxScan, int *auxP
         return i - 1;
     } else if (strcmp(P[i].type, "DALLOC") == 0){
         for (int k = (P[i].n - 1); k >= 0; k --){
-            M[P[i].m + k] = M[*s];
+            M[P[i].m - k] = M[*s];
             *s = *s - 1;
         }
     } else if (strcmp(P[i].type, "ALLOC") == 0){
-        for (int k = 0; k <= (P[i].n - 1) ; k++){
-                *s = *s + 1;
-                M[*s] = M[P[i].m + k];
+        if (P[i].m != 0){
+            for (int k = 0; k <= (P[i].n - 1) ; k++){
+                    *s = *s + 1;
+                    M[*s] = M[P[i].m + k];
 
+            }
         }
     } else if (strcmp(P[i].type, "CALL") == 0){
         *s = *s + 1;
@@ -527,10 +571,20 @@ int executionFunction(instru P[],int i, int M[], int *s, int *auxScan, int *auxP
         return -1;
     }else if (strcmp(P[i].type, "RD") == 0){
         *s = *s + 1;
-        printf("\nENTRADA DO PROGRAMA:");
-        scanf("%d", &M[*s]);
+        if(interface_mode){
+            printf("EVENT:INPUT_REQUEST\n");
+            fflush(stdout);
+            waiting_input_value = true; // valor será lido externamente no loop principal
+        } else {
+            printf("\nENTRADA DO PROGRAMA:");
+            scanf("%d", &M[*s]);
+        }
     }else if (strcmp(P[i].type, "PRN") == 0){
-        printf("\nSAIDA DO PROGRAMA:%d\n",M[*s]);
+        if(interface_mode){
+            printf("EVENT:OUTPUT value=%d\n", M[*s]);
+        } else {
+            printf("\nSAIDA DO PROGRAMA:%d\n",M[*s]);
+        }
         *s = *s - 1;
     }else if (strcmp(P[i].type, "STR") == 0){
         M[P[i].m] = M[*s]; 
@@ -541,14 +595,17 @@ int executionFunction(instru P[],int i, int M[], int *s, int *auxScan, int *auxP
         printf("esse comando nao foi feito ainda ;p\n");
     }
     
-    printf("Stack top (s=%d): \n", *s);
-    for (int j = 0; j <= *s; j++) {
-        printf("[%d]:%d \n",j, M[j]);
+    if(!interface_mode){
+        printf("Stack top (s=%d): \n", *s);
+        for (int j = 0; j <= *s; j++) {
+            printf("[%d]:%d \n",j, M[j]);
+        }
+        printf("\n"); 
     }
-    printf("\n"); 
-    
     i++;
-    printf("valor que esta sendo retornado do I:%d\n",i);
+    if(!interface_mode){
+        printf("valor que esta sendo retornado do I:%d\n",i);
+    }
     return i;
     
 }
@@ -574,10 +631,13 @@ int main(int argc, char *argv[])
     system("clear");
     #endif
     
-    // checking for correct number of arguments
-    if(argc != 2){
-        printf("Usage: ./mvd <filename>.o\n");
+    // Verifica argumentos (2 normais ou 3 com --iface)
+    if(argc < 2 || argc > 3){
+        printf("Uso: ./mvd <arquivo>.o [--iface]\n");
         return 1;
+    }
+    if(argc == 3 && strcmp(argv[2], "--iface") == 0){
+        interface_mode = true;
     }
     
     // checking if the file can be opened
@@ -596,58 +656,124 @@ int main(int argc, char *argv[])
         printf("P[%d]: %s %d %d\n", o, P[o].type, P[o].m, P[o].n);
     }
     
-    // ================= Selection of execution mode =================
-    int mode = 0;
-    char inbuf[16];
-    printf("\nSelecione o modo de execucao:\n");
-    printf("1 - Direto (ate %d)\n", linenumb);
-    printf("2 - Passo a passo (pressione Enter a cada instrucao)\n> ");
-    if (fgets(inbuf, sizeof(inbuf), stdin) != NULL) {
-        mode = atoi(inbuf);
-    }
-    if (mode != 2) mode = 1; // default to direct mode if invalid input
-    
-    int aborted = 0;
-    if (mode == 2) {
-        for (; counter < linenumb; counter++) {
-            printf("=================================================\n");
-            i = executionFunction(P, i, M, &s, &auxScan, &auxPrint);
-            if (i < 0){
-                return 0;
-            }
-            printf("=================================================\n");
-            printf("Pressione Enter para continuar (ESC para sair)...\n");
-            fflush(stdout);
+    if(!interface_mode){
+        // ================= Seleção de modo tradicional =================
+        int mode = 0;
+        char inbuf[16];
+        printf("\nSelecione o modo de execucao:\n");
+        printf("1 - Direto (ate %d)\n", linenumb);
+        printf("2 - Passo a passo (pressione Enter a cada instrucao)\n> ");
+        if (fgets(inbuf, sizeof(inbuf), stdin) != NULL) {
+            mode = atoi(inbuf);
+        }
+        if (mode != 2) mode = 1; // default direto
 
-            int ch;
-            while (1) {
-                ch = getchar();
-                if (ch == '\n' || ch == EOF) break;
-                if (ch == 27) {
-                    aborted = 1;
-                    break;
+        int aborted = 0;
+        if (mode == 2) {
+            for (; counter < linenumb; counter++) {
+                printf("=================================================\n");
+                i = executionFunction(P, i, M, &s, &auxScan, &auxPrint);
+                if (i < 0){
+                    return 0;
                 }
+                printf("=================================================\n");
+                printf("Pressione Enter para continuar (ESC para sair)...\n");
+                fflush(stdout);
+
+                int ch;
+                while (1) {
+                    ch = getchar();
+                    if (ch == '\n' || ch == EOF) break;
+                    if (ch == 27) {
+                        aborted = 1;
+                        break;
+                    }
+                }
+                if (aborted) break;
             }
-            if (aborted) break;
+        } else {
+            for (; counter < linenumb; counter++) {
+#ifdef _WIN32
+                if (_kbhit()) {
+                    int ch = _getch();
+                    if (ch == 27) {
+                        aborted = 1;
+                        break;
+                    }
+                }
+#endif
+                i = executionFunction(P, i, M, &s, &auxScan, &auxPrint);
+            }
+        }
+        if (aborted) {
+            printf("\nExecucao interrompida pelo usuario (ESC).\n");
         }
     } else {
-        for (; counter < linenumb; counter++) {
-
-#ifdef _WIN32
-            if (_kbhit()) {
-                int ch = _getch();
-                if (ch == 27) {
-                    aborted = 1;
+        // ================= Loop de interface para GUI =================
+        printf("EVENT:READY linenumb=%d\n", linenumb);
+        fflush(stdout);
+        while(counter < linenumb){
+            if(i < 0) break;
+            // Se aguardando valor para RD, ler primeiro
+            if(waiting_input_value){
+                char valbuf[64];
+                if(fgets(valbuf, sizeof(valbuf), stdin) == NULL){
+                    printf("EVENT:ABORTED\n");
+                    fflush(stdout);
                     break;
                 }
+                trim_newline(valbuf);
+                int v = atoi(valbuf);
+                M[s] = v; // valor foi reservado em RD (s já incrementado)
+                waiting_input_value = false;
+                // Após preencher, continua execução sem avançar i (já executado RD)
             }
-#endif
+            if(waiting_input_value){
+                // ainda esperando, volta ao loop para ler
+                continue;
+            }
+            // Imprime instrução corrente
+            if(i >= linenumb){
+                printf("EVENT:HALT\n");
+                fflush(stdout);
+                break;
+            }
+            printf("EVENT:INSTR idx=%d type=%s m=%d n=%d\n", i, P[i].type, P[i].m, P[i].n);
+            fflush(stdout);
+            int prev_i = i;
             i = executionFunction(P, i, M, &s, &auxScan, &auxPrint);
+            if(i == -1){
+                printf("EVENT:HALT\n");
+                fflush(stdout);
+                break;
+            }
+            print_event_stack(M, s);
+            printf("EVENT:DONE idx=%d\n", i);
+            fflush(stdout);
+            counter++;
+            if(direct_run_mode){
+                continue; // não espera comando
+            }
+            // Espera comando CONTINUE/DIRECT/ABORT
+            char cmdbuf[64];
+            if(fgets(cmdbuf, sizeof(cmdbuf), stdin) == NULL){
+                printf("EVENT:ABORTED\n");
+                fflush(stdout);
+                break;
+            }
+            trim_newline(cmdbuf);
+            if(strcasecmp(cmdbuf, "ABORT") == 0){
+                printf("EVENT:ABORTED\n");
+                fflush(stdout);
+                break;
+            } else if(strcasecmp(cmdbuf, "DIRECT") == 0){
+                direct_run_mode = true;
+            } else if(strcasecmp(cmdbuf, "CONTINUE") == 0){
+                // apenas prossegue
+            } else {
+                // comando desconhecido -> ignora e prossegue
+            }
         }
-    }
-
-    if (aborted) {
-        printf("\nExecucao interrompida pelo usuario (ESC).\n");
     }
     // =============================================================================
 
