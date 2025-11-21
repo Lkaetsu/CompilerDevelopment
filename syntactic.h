@@ -649,7 +649,8 @@ void syntactical() {
 
         if (tk.simbolo == sidentificador){
 //            printf("programa %s", tk.lexema);
-            insertTable(tk.lexema, tnomedeprograma, 0, "");
+            sprintf(addr, " ");
+            insertTable(tk.lexema, tnomedeprograma, 0, addr);
             codeGen("   ", "START  ", "   ", "   ");
             sprintf(addr, "%d", availableAddr);
             sprintf(cont, ",%d", 1);

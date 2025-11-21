@@ -13,9 +13,12 @@ int main(int argc, char *argv[])
     }
 
     char filename[256];
-    strncpy(filename, argv[1], 256);
+    char *last_dot;
+    strncpy(filename, argv[1], 250);
     FILE *codeFile = fopen(filename, "r");
-    strncat(filename, ".o", 3);
+    last_dot = strrchr(filename, '.');
+    *(last_dot+1) = 'o';
+    *(last_dot+2) = '\0';
     FILE *outputFile = fopen(filename, "w");
 
     // Could not open file
@@ -36,7 +39,6 @@ int main(int argc, char *argv[])
 //        tk = lexical();
 //        printf("[%s]: %d\n",tk.lexema, tk.simbolo);
 //    }
-
     syntactical();
 
     fclose(outputFile);
