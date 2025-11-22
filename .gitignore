@@ -6,4 +6,4 @@
 output
 teste _de_funcao.c
 buffertest.o
-__pycache__/*
+__pycache__*
