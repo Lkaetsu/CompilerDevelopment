@@ -21,10 +21,23 @@ typedef struct instru{
     int m;
     int n;
 }instru;
-    
+
+int mode = 1; // direct mode
 int c;
 int linenumb = 0;
 FILE *file;
+
+void helpFunction(){
+    printf("\n===============================================================\n");
+    printf("  MVD - Maquina Virtual Didatica\n");
+    printf("===============================================================\n");
+    printf("Uso: mvd <arquivo>.o [opcoes]\n\n");
+    printf("Opcoes:\n");
+    printf("  -h  Mostrar esta ajuda\n");
+    printf("  -s  Modo passo a passo (ENTER avanca, ESC aborta)\n\n");
+    printf("Sem opcoes: modo direto (executa ate HLT)\n");
+    printf("===============================================================\n");
+}
 
 void intToStr(int N, char *str) {
     int i = 0;
@@ -248,10 +261,10 @@ void commandPile(instru P[], int *i, FILE *file){
         }
     }
 
-    for(int i = 0; i < linenumb; i++){
-        printf("%s",linebuffer[i]);
-    }
-    printf("\n\n");
+    // for(int i = 0; i < linenumb; i++){
+    //     printf("%s",linebuffer[i]);
+    // }
+    // printf("\n\n");
     
     // populating the P stack
     for(int x = 0; x < linenumb; x++){
@@ -292,15 +305,17 @@ void commandPile(instru P[], int *i, FILE *file){
                     }
                     break;
                 }else if(strstr(isntruFvector, "JMP" )){
-                    for(int j = 0; j < strlen(line); j++){
+                    for(int j = 0; j < (int)strlen(line); j++){
                         if (isdigit((unsigned char)line[j])){
                             P[x].m = 0;
-                            while (j < strlen(line)){
+                            while (j < (int)strlen(line)){
                                 if (isdigit((unsigned char)line[j])){
                                     P[x].m = P[x].m * 10 + (line[j] - '0');
                                 }
                                 j++;
                             }
+                            // Ajuste solicitado: usar índice interno baseado em 0
+                            P[x].m = P[x].m - 1; // subtrai 1 antes de armazenar
                             break;
                         }
                     }
@@ -364,8 +379,18 @@ void commandPile(instru P[], int *i, FILE *file){
 // taking the things from the vector and executing they
 int executionFunction(instru P[],int i, int M[], int *s, int *auxScan, int *auxPrint){
     
-    printf("Executing P[%d]: %s %d %d\n", i, P[i].type, P[i].m, P[i].n);
-    printf("valor de entrada do I:%d\n",i);
+    if(mode == 2){
+        printf("Executing Line:%d\n", i);
+        if(strcmp(P[i].type, "DALLOC") == 0 || strcmp(P[i].type, "ALLOC" ) == 0){
+            printf("Instruction: %s %d %d\n", P[i].type, P[i].m, P[i].n);
+        }else if (strcmp(P[i].type, "JMPF") == 0 || strcmp(P[i].type, "JMP") == 0 || 
+                  strcmp(P[i].type, "CALL") == 0 || strcmp(P[i].type, "STR") == 0 ||
+                  strcmp(P[i].type, "LDC") == 0|| strcmp(P[i].type, "LDV") == 0){
+            printf("Instruction: %s %d\n", P[i].type, P[i].m);
+        }else{
+            printf("Instruction: %s\n", P[i].type);
+        }
+    }
     
     if(strcmp(P[i].type, "LDC") == 0){
         *s = *s + 1; 
@@ -463,12 +488,15 @@ int executionFunction(instru P[],int i, int M[], int *s, int *auxScan, int *auxP
         *s = *s - 1;
 
         // ====================== Prints =========================
-        printf("Stack top (s=%d): \n", *s);
-        for (int j = 0; j <= *s; j++) {
-            printf("[%d]:%d \n",j, M[j]);
+        if (mode ==2)
+        {
+            printf("Stack top (s=%d): \n", *s);
+            for (int j = 0; j <= *s; j++) {
+                printf("[%d]:%d \n",j, M[j]);
+            }
+            printf("\n"); 
+            printf("Next Line:%d\n",i);
         }
-        printf("\n"); 
-        printf("valor que esta sendo retornado do I:%d\n",i);
         // =======================================================
 
         return i;
@@ -476,15 +504,19 @@ int executionFunction(instru P[],int i, int M[], int *s, int *auxScan, int *auxP
         i = P[i].m; 
 
         // ====================== Prints =========================
-        printf("Stack top (s=%d): \n", *s);
-        for (int j = 0; j <= *s; j++) {
-            printf("[%d]:%d \n",j, M[j]);
+        if (mode == 2)
+        {
+            printf("Stack top (s=%d): \n", *s);
+            for (int j = 0; j <= *s; j++) {
+                printf("[%d]:%d \n",j, M[j]);
+            }
+            printf("\n"); 
+            printf("Next Line:%d\n",i);
         }
-        printf("\n"); 
-        printf("valor que esta sendo retornado do I:%d\n",i - 1);
+        
         // =======================================================
 
-        return i - 1;
+        return i;
     } else if (strcmp(P[i].type, "DALLOC") == 0){
         for (int k = (P[i].n - 1); k >= 0; k --){
             M[P[i].m + k] = M[*s];
@@ -501,36 +533,54 @@ int executionFunction(instru P[],int i, int M[], int *s, int *auxScan, int *auxP
         M[*s] = i + 1;
         i = P[i].m;
         // ====================== Prints =========================
-        printf("Stack top (s=%d): \n", *s);
-        for (int j = 0; j <= *s; j++) {
-            printf("[%d]:%d \n",j, M[j]);
+        if (mode == 2)
+        {
+            printf("Stack top (s=%d): \n", *s);
+            for (int j = 0; j <= *s; j++) {
+                printf("[%d]:%d \n",j, M[j]);
+            }
+            printf("\n"); 
+            printf("Next Line:%d\n",i);
         }
-        printf("\n"); 
-        printf("valor que esta sendo retornado do I:%d\n",i);
+        
         // =======================================================
         return i;
     } else if (strcmp(P[i].type, "START") == 0) {
-        printf("===PROGRAMA INICIALIZADO===\n");
+        if (mode == 2)
+        {
+            printf("===INITIALISING PROGRAM===\n");
+        }
+        i ++;
+        return i;
     } else if (strcmp(P[i].type, "RETURN") == 0){
         i = M[*s];
         *s = *s - 1;
         // ====================== Prints =========================
-        printf("Stack top (s=%d): \n", *s);
-        for (int j = 0; j <= *s; j++) {
-            printf("[%d]:%d \n",j, M[j]);
+        if (mode == 2)
+        {
+            printf("Stack top (s=%d): \n", *s);
+            for (int j = 0; j <= *s; j++) {
+                printf("[%d]:%d \n",j, M[j]);
+            }
+            printf("\n"); 
+            printf("Next Line:%d\n",i);
         }
-        printf("\n"); 
-        printf("valor que esta sendo retornado do I:%d\n",i);
+        
         // =======================================================
         return i;
     }else if (strcmp(P[i].type, "HLT") == 0){
+        if (mode == 2)
+        {
+            printf("===PROGRAM HALTED===\n");
+        }
         return -1;
     }else if (strcmp(P[i].type, "RD") == 0){
         *s = *s + 1;
-        printf("\nENTRADA DO PROGRAMA:");
+        printf("\nPROGRAM INPUT:");
         scanf("%d", &M[*s]);
+        getchar();
     }else if (strcmp(P[i].type, "PRN") == 0){
-        printf("\nSAIDA DO PROGRAMA:%d\n",M[*s]);
+        printf("\nPROGRAM OUTPUT:%d\n",M[*s]);
         *s = *s - 1;
     }else if (strcmp(P[i].type, "STR") == 0){
         M[P[i].m] = M[*s]; 
@@ -538,17 +588,21 @@ int executionFunction(instru P[],int i, int M[], int *s, int *auxScan, int *auxP
     }else if (strcmp(P[i].type, "NULL") == 0){
     }
     else {
-        printf("esse comando nao foi feito ainda ;p\n");
+        printf("this command has not been implemented yet ;p\n");
     }
     
-    printf("Stack top (s=%d): \n", *s);
-    for (int j = 0; j <= *s; j++) {
-        printf("[%d]:%d \n",j, M[j]);
-    }
-    printf("\n"); 
     
     i++;
-    printf("valor que esta sendo retornado do I:%d\n",i);
+    if (mode == 2)
+    {
+        printf("Stack top (s=%d): \n", *s);
+        for (int j = 0; j <= *s; j++) {
+            printf("[%d]:%d \n",j, M[j]);
+        }
+        printf("\n"); 
+        printf("Next Line:%d\n",i);
+    }
+    
     return i;
     
 }
@@ -567,89 +621,97 @@ int main(int argc, char *argv[])
     int counter = 0;
     char c;
     
-    // cleaning the terminal after begin
-    #ifdef _WIN32
-    system("cls");
-    #else
-    system("clear");
-    #endif
     
-    // checking for correct number of arguments
-    if(argc != 2){
-        printf("Usage: ./mvd <filename>.o\n");
+    // argumentos: mvd <arquivo>.o [-modstep]
+    if (argc < 2) {
+        printf("Usage: ./mvd <arquivo>.o [options]\n");
         return 1;
     }
     
+    // definir modo baseado em argumento opcional '-modstep'
+    if (argc >= 3) {
+        if (strcmp(argv[2], "-s") == 0) {
+            mode = 2; // passo
+        } else if (strcmp(argv[2], "-h") == 0) {
+            helpFunction();
+            return 0;
+        }else{
+            printf("Unknown flag '%s'. Use -h to see options.\n", argv[2]);
+            return 1;
+        }
+    }
+
     // checking if the file can be opened
     file = fopen(argv[1], "r");
     if (file == NULL) {
-        fprintf(stderr, "Erro ao abrir '%s': %s\n", argv[1], strerror(errno));
+        fprintf(stderr, "Error opening '%s': %s\n", argv[1], strerror(errno));
+        helpFunction();
         return 1;
     }
-    printf("Arquivo aberto: %s\n", argv[1]);
+    printf("File opened: %s\n", argv[1]);
     
     // populating the P stack
     commandPile(P, &i, file);
     
-    // ================= Debugging For, It will print the intire P stack =================
-    for (int o = 0; o < linenumb; o++){
-        printf("P[%d]: %s %d %d\n", o, P[o].type, P[o].m, P[o].n);
-    }
     
-    // ================= Selection of execution mode =================
-    int mode = 0;
-    char inbuf[16];
-    printf("\nSelecione o modo de execucao:\n");
-    printf("1 - Direto (ate %d)\n", linenumb);
-    printf("2 - Passo a passo (pressione Enter a cada instrucao)\n> ");
-    if (fgets(inbuf, sizeof(inbuf), stdin) != NULL) {
-        mode = atoi(inbuf);
-    }
-    if (mode != 2) mode = 1; // default to direct mode if invalid input
+    
     
     int aborted = 0;
-    if (mode == 2) {
-        for (; counter < linenumb; counter++) {
+    
+    if (mode == 1) {
+        while (i >= 0) {
+            i = executionFunction(P, i, M, &s, &auxScan, &auxPrint);
+        }
+    } else { // modo passo
+        // cleaning the terminal after begin
+        #ifdef _WIN32
+        system("cls");
+        #else
+        system("clear");
+        #endif
+        // ================= Debugging For, It will print the intire P stack =================
+        printf("===DEBUGGING: P STACK CONTENT===\n");
+            for (int o = 0; o < linenumb; o++){
+                if(strcmp(P[o].type, "DALLOC") == 0 || strcmp(P[o].type, "ALLOC" ) == 0)
+                {
+                    printf("P[%d]: %s %d %d\n", o, P[o].type, P[o].m, P[o].n);
+                }else if (strcmp(P[o].type, "JMPF") == 0 || strcmp(P[o].type, "JMP") == 0 || 
+                          strcmp(P[o].type, "CALL") == 0 || strcmp(P[o].type, "STR") == 0 ||
+                          strcmp(P[o].type, "LDC") == 0|| strcmp(P[o].type, "LDV") == 0)
+                {
+                    printf("P[%d]: %s %d\n", o, P[o].type, P[o].m);
+                }else
+                {
+                    printf("P[%d]: %s\n", o, P[o].type);
+                }
+            }
+        while (i >= 0) {
             printf("=================================================\n");
             i = executionFunction(P, i, M, &s, &auxScan, &auxPrint);
-            if (i < 0){
-                return 0;
-            }
+            if (i < 0) break;
             printf("=================================================\n");
-            printf("Pressione Enter para continuar (ESC para sair)...\n");
+            printf("Press Enter to continue (ESC to exit)...\n");
             fflush(stdout);
-
             int ch;
             while (1) {
+                #ifdef _WIN32
+                ch = _getch();
+                #else
                 ch = getchar();
-                if (ch == '\n' || ch == EOF) break;
-                if (ch == 27) {
-                    aborted = 1;
+                #endif
+                if (ch == 27) { // ESC aborta
+                    aborted = 1; break;
+                }
+                if (ch == '\r' || ch == '\n' || ch == EOF) { // Enter
                     break;
                 }
             }
             if (aborted) break;
         }
-    } else {
-        for (; counter < linenumb; counter++) {
-
-#ifdef _WIN32
-            if (_kbhit()) {
-                int ch = _getch();
-                if (ch == 27) {
-                    aborted = 1;
-                    break;
-                }
-            }
-#endif
-            i = executionFunction(P, i, M, &s, &auxScan, &auxPrint);
+        if (aborted) {
+            printf("Execution aborted by user.\n");
         }
     }
-
-    if (aborted) {
-        printf("\nExecucao interrompida pelo usuario (ESC).\n");
-    }
-    // =============================================================================
 
     fclose(file);
 
