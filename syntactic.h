@@ -155,7 +155,7 @@ void expressionAnalysis(Expr *expr){
     simpleExpressionAnalysis(expr);
     if (tk.simbolo == smaior || tk.simbolo == smaiorig ||
         tk.simbolo == smenor || tk.simbolo == smenorig ||
-        tk.simbolo == sdif)
+        tk.simbolo == sdif   || tk.simbolo == sig)
     {
         // printf("%s ", tk.lexema);
         storeExpr(expr, tk.lexema, tk.simbolo);

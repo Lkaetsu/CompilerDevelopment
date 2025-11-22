@@ -31,15 +31,15 @@ void codeGenExpr(Expr posfix, int resultType){
                 auxStack.top++;
                 break;
             case sverdadeiro:
-                strncpy(auxStack.lexema[auxStack.top], "1", 2);
+                sprintf(addr, "%d", 1);
                 auxStack.type[auxStack.top] = tbooleano;
-                codeGen("   ", "LDC    ", auxStack.lexema[auxStack.top], "   ");
+                codeGen("   ", "LDC    ", addr, "   ");
                 auxStack.top++;
                 break;
             case sfalso:
-                strncpy(auxStack.lexema[auxStack.top], "0", 2);
+                sprintf(addr, "%d", 0);
                 auxStack.type[auxStack.top] = tbooleano;
-                codeGen("   ", "LDC    ", auxStack.lexema[auxStack.top], "   ");
+                codeGen("   ", "LDC    ", addr, "   ");
                 auxStack.top++;
                 break;
             case sidentificador:

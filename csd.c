@@ -17,6 +17,9 @@ int main(int argc, char *argv[])
     strncpy(filename, argv[1], 250);
     FILE *codeFile = fopen(filename, "r");
     last_dot = strrchr(filename, '.');
+    if(last_dot == NULL){
+        last_dot = &filename[strlen(filename) - 1];
+    }
     *(last_dot+1) = 'o';
     *(last_dot+2) = '\0';
     FILE *outputFile = fopen(filename, "w");
