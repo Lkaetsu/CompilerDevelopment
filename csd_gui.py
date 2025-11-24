@@ -52,7 +52,16 @@ class CSDGUI:
 
         # Scrollbar do editor (agora como filho do frame do editor)
         self.yscrollfile = tk.Scrollbar(file_frame, orient=tk.VERTICAL, command=self.file.yview)
-        self.file.configure(yscrollcommand=self.yscrollfile.set)
+
+        # Wrapper para o yscrollcommand: atualiza a barra e redesenha números de linha
+        def _on_text_scroll(*args):
+            self.yscrollfile.set(*args)
+            try:
+                self.linenumbers.redraw()
+            except Exception:
+                pass
+
+        self.file.configure(yscrollcommand=_on_text_scroll)
         self.yscrollfile.pack(side=tk.RIGHT, fill=tk.Y)
 
         self.yscroll = tk.Scrollbar(self.text, orient=tk.VERTICAL, command=self.text.yview)
