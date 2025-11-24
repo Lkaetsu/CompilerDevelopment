@@ -19,7 +19,7 @@ class TextLineNumbers(tk.Canvas):
                 break
             y = dline[1]
             linenum = str(i).split(".")
-            self.create_text(2, y, anchor="nw", text=linenum)
+            self.create_text(2, y, anchor="nw", text=linenum[0])
             i = self.textwidget.index("%s+1line" % i)
 
 

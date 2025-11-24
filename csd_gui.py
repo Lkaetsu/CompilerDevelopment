@@ -31,12 +31,17 @@ class CSDGUI:
         tk.Button(mode_frame, text="Salvar", command=self.save).pack(side=tk.LEFT)
         tk.Button(mode_frame, text="Compilar", command=self.compile).pack(side=tk.LEFT)
 
-        # File area
-        self.file = CustomText(master, height=25, wrap="none")
-        self.file.pack(fill=tk.BOTH, expand=True, padx=8, pady=4)
-        self.linenumbers = TextLineNumbers(master, width=30)
+        # File area (com números de linha)
+        file_frame = tk.Frame(master)
+        file_frame.pack(fill=tk.BOTH, expand=True, padx=8, pady=4)
+
+        # aumentar a largura da área de números de linha
+        self.linenumbers = TextLineNumbers(file_frame, width=80)
+        self.file = CustomText(file_frame, height=25, wrap="none")
         self.linenumbers.attach(self.file)
         self.linenumbers.pack(side=tk.LEFT, fill="y")
+        self.file.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
         self.file.bind("<<Change>>", self._on_change)
         self.file.bind("<<Configure>>", self._on_change)
 
@@ -45,8 +50,8 @@ class CSDGUI:
         self.text.pack(fill=tk.BOTH, expand=True, padx=8, pady=4)
         self.text.configure(state=tk.DISABLED)
 
-        # Scrollbars
-        self.yscrollfile = tk.Scrollbar(self.file, orient=tk.VERTICAL, command=self.file.yview)
+        # Scrollbar do editor (agora como filho do frame do editor)
+        self.yscrollfile = tk.Scrollbar(file_frame, orient=tk.VERTICAL, command=self.file.yview)
         self.file.configure(yscrollcommand=self.yscrollfile.set)
         self.yscrollfile.pack(side=tk.RIGHT, fill=tk.Y)
 
@@ -58,6 +63,7 @@ class CSDGUI:
 
     def _on_change(self, event):
         self.linenumbers.redraw()
+        self.saved = False
 
     def log(self, line, mode="rep"):
         self.text.configure(state=tk.NORMAL)
@@ -111,6 +117,8 @@ class CSDGUI:
         return None
 
     def compile(self):
+        if self.saved == False:
+            self.save()
         if not self.start_process():
             return
         self.log("Compilando...")
@@ -166,5 +174,8 @@ class CSDGUI:
 
 if __name__ == "__main__":
     root = tk.Tk()
+    # abrir a janela com tamanho maior por padrão
+    root.geometry("1200x800")
+    root.minsize(900,600)
     app = CSDGUI(root)
     root.mainloop()
