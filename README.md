@@ -1,3 +1,39 @@
+# CSD — Compilador Simples Didático
+
+Este README descreve como executar a VM `mvd` a partir da linha de comando, quais opções estão disponíveis e exemplos passo a passo para uso direto e em modo passo a passo.
+
+**Requisitos**
+- `gcc` (para compilar `csd.c`) — disponível em MSYS2/MinGW no Windows ou em distribuições Linux/Unix.
+- Terminal/Prompt para passar argumentos e interagir via stdin.
+
+**Compilar (opcional)**
+Se você recebeu o código-fonte `csd.c`, compile o executável:
+
+Windows (MSYS2 / MinGW):
+```powershell
+gcc csd.c -o csd.exe
+```
+Unix / Linux / macOS:
+```bash
+gcc csd.c -o csd
+```
+
+**Uso básico**
+```bash
+# Compila e gera um arquivo objeto de mesmo nome, mas extensão .o
+./csd programa.txt
+```
+
+**Como inserir o arquivo via argumento (passo a passo)**
+1. Abra um terminal/Prompt de comando.
+2. Navegue até a pasta que contém `csd` e o arquivo objeto (`programa.txt`).
+3. Execute o compilador igual ao exemplo acima:
+	```bash
+	./csd path/to/code.txt
+	```
+4. Ao rodar esse comando, existem duas opções:
+	- No caso de erro, aparecerá um erro destacando a linha onde o erro se encontra e uma explicação de qual o problema nessa linha;
+	- No caso de sucesso, será gerado um arquivo objeto de mesmo nome, mas de extensão `.o` com as intruções para execução na mvd.
 
 # MVD — Máquina Virtual Didática
 
@@ -22,7 +58,7 @@ gcc mvd.c -o mvd
 **Uso básico**
 O formato geral é:
 ```
-mvd <arquivo>.o -[opcoes]
+mvd <arquivo> -[opcoes]
 ```
 
 - `arquivo.o` — arquivo objeto gerado pelo compilador do projeto.
@@ -59,7 +95,6 @@ Exemplos:
 **Dicas e observações**
 - Se estiver em Windows e `ESC` não funcionar no seu terminal, use `Ctrl+C` para abortar.
 - Sempre confirme que o arquivo `.o` está no diretório atual ou passe o caminho absoluto/relativo correto.
-- Se quiser automatizar ou ter uma GUI, use o arquivo `mvd_gui.py` presente no repositório (Python + Tkinter). A GUI pode compilar `mvd.c` e executar o binário para você.
 
 ## Exemplos de execução (saída esperada)
 
@@ -117,3 +152,4 @@ Next Line:3
 Observações:
 - No modo `-s` a VM imprime informações de depuração e aguarda `Enter` a cada passo.
 - Pressione `ESC` (se suportado) ou `Ctrl+C` para abortar a execução passo a passo.
+
